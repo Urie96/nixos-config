@@ -1,0 +1,110 @@
+{
+  "ap": {
+    "body": "${1:LIST}+=(${2:ITEM})",
+    "prefix": "ap"
+  },
+  "args": {
+    "body": "while [[ $# -gt 0 ]]; do\n  case $1 in\n  -t | --title)\n    shift\n    TITLE=\"$1\"\n    ;;\n  -*)\n    echo \"Unknown option $1\"\n    exit 1\n    ;;\n  *)\n    MESSAGE=\"$1\"\n    ;;\n  esac\n  shift\ndone\n",
+    "prefix": "args"
+  },
+  "array": {
+    "body": "\"\\${${1:LIST}[@]}\"",
+    "prefix": "array"
+  },
+  "basename": {
+    "body": "\\${${1:FILE_PATH}##*/}",
+    "prefix": "basename"
+  },
+  "bash": {
+    "body": "#!/usr/bin/env bash",
+    "prefix": "bash"
+  },
+  "break": {
+    "body": "break ${0}",
+    "prefix": "break"
+  },
+  "confirm": {
+    "body": "read -p \"Confirm?(Y/n)\" -n 1 -r choice </dev/tty\necho\ncase \"\\$choice\" in\ny | Y | \"\") ;;\nn | N) exit ;;\n*) exit 1 ;;\nesac\n",
+    "prefix": "confirm"
+  },
+  "dirname": {
+    "body": "\\${${1:FILE_PATH}%/*}",
+    "prefix": "dirname"
+  },
+  "else": {
+    "body": "else\n\t${0:command}",
+    "prefix": "else"
+  },
+  "elseif": {
+    "body": "elif [[ ${1} ]]; then\n\t${0}",
+    "prefix": "elseif"
+  },
+  "env": {
+    "body": "#!/usr/bin/env ${1:bash}",
+    "prefix": "env"
+  },
+  "eof": {
+    "body": "cat <<-\"EOF\"\n   This is line three.$1\nEOF\n",
+    "prefix": "eof"
+  },
+  "expr": {
+    "body": "expr ${0:1 + 1}",
+    "prefix": "expr"
+  },
+  "fori": {
+    "body": "for ((${1:i} = 0; ${1:i} < ${0:10}; ${1:i}++)); do\n  echo \"\\${1:i}\"\ndone\n",
+    "prefix": "fori"
+  },
+  "forr": {
+    "body": "for $1 in \"$LIST{[@]}\"\ndo\n  echo \"hello\"\ndone\n",
+    "prefix": "forr"
+  },
+  "func": {
+    "body": "$1 () {\n  $0\n}\n",
+    "prefix": "func"
+  },
+  "if": {
+    "body": "if [[ ${1} ]]; then\n  ${0}\nfi\n",
+    "prefix": "if"
+  },
+  "ifelse": {
+    "body": "if [[ ${1} ]]; then\n  ${0}\nelse\n  echo \"else\"\nfi",
+    "prefix": "ifelse"
+  },
+  "linebyline": {
+    "body": "while IFS= read -r line; do\n  echo \\$line\ndone < my_filename.txt\n",
+    "prefix": "linebyline"
+  },
+  "linesarray": {
+    "body": "if IFS=\\$'\\n' read -d \"\" -r -a lines; then :; fi < <(echo -en 'a\\nb\\nc')\n",
+    "prefix": "linesarray"
+  },
+  "nolint": {
+    "body": "# shellcheck disable=",
+    "prefix": "nolint"
+  },
+  "startswith": {
+    "body": "[[ \\$var == prefix* ]]",
+    "prefix": "startswith"
+  },
+  "switch": {
+    "body": "case $1 in\n  1) echo 1\n  ;;\n  2|3) echo 2 or 3\n  ;;\n  *) echo default\n  ;;\nesac\n",
+    "prefix": "switch"
+  },
+  "traperr": {
+    "body": "set -e\n\nfunction wait_confirm {\n  read -p \\$'HAS ERROR!\\nPress any key to exit... \\n' -n1 -s\n}\n\ntrap wait_confirm ERR\n",
+    "prefix": "traperr"
+  },
+  "until": {
+    "body": "until [[ ${1} ]]; do\n\t${0}\ndone\n",
+    "prefix": "until"
+  },
+  "wait": {
+    "body": "read -p \\$'Press any key to continue... \\\\n' -n1 -s",
+    "prefix": "wait"
+  },
+  "while": {
+    "body": "while [[ $1 ]]; do\n  $0\ndone\n",
+    "prefix": "while"
+  }
+}

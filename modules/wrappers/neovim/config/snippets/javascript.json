@@ -1,0 +1,54 @@
+{
+  "clg": {
+    "body": "console.log($1)\n",
+    "prefix": "clg"
+  },
+  "fn": {
+    "body": "($1) => { $2 }\n",
+    "prefix": "fn"
+  },
+  "fori": {
+    "body": "for (let i = 0; i < $1; i++) {\n  $0\n}\n",
+    "prefix": "fori"
+  },
+  "forr": {
+    "body": "for (const $1 of $2) {\n  $0\n}\n",
+    "prefix": "forr"
+  },
+  "func": {
+    "body": "function ($1) {\n  $2\n}\n",
+    "prefix": "func"
+  },
+  "if": {
+    "body": "if ($1) {\n  $0\n}\n",
+    "prefix": "if"
+  },
+  "ifelse": {
+    "body": "if ($1) {\n  $2\n} else {\n  $3\n}\n",
+    "prefix": "ifelse"
+  },
+  "imp": {
+    "body": "import $1 from '$1';",
+    "prefix": "imp"
+  },
+  "prom": {
+    "body": "return new Promise((resolve, reject) => {\n  $1\n});\n",
+    "prefix": "prom"
+  },
+  "req": {
+    "body": "const $1 = require('$1');",
+    "prefix": "req"
+  },
+  "switch": {
+    "body": "switch ($1) {\n  case $2:\n    $0\n    break;\n\n  default:\n    break;\n}\n",
+    "prefix": "switch"
+  },
+  "try": {
+    "body": "try {\n  $0\n} catch (err) {\n\n}\n",
+    "prefix": "try"
+  },
+  "while": {
+    "body": "while ($1) {\n  $0\n}\n",
+    "prefix": "while"
+  }
+}

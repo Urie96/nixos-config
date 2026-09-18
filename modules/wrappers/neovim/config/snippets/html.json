@@ -1,0 +1,22 @@
+{
+  "!": {
+    "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Document</title>\n</head>\n<body>\n  $0\n</body>\n</html>\n",
+    "prefix": "!"
+  },
+  "a": {
+    "body": "<a href=\"$1\">$2</a>$3",
+    "prefix": "a"
+  },
+  "div": {
+    "body": "<div>$1</div>",
+    "prefix": "div"
+  },
+  "p": {
+    "body": "<p>$1</p>",
+    "prefix": "p"
+  },
+  "span": {
+    "body": "<span>$1</span>",
+    "prefix": "span"
+  }
+}

@@ -1,0 +1,12 @@
+diff --git a/opencc/emoji.json b/opencc/emoji.json
+index e2cac3e..23a19a8 100644
+--- a/opencc/emoji.json
++++ b/opencc/emoji.json
+@@ -11,6 +11,7 @@
+ 		{
+ 			"dict": {
+ 				"type": "group",
++				"match_policy": "short_circuit",
+ 				"dicts": [
+ 					{
+ 						"type": "text",

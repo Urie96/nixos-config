@@ -1,0 +1,163 @@
+binds {
+    // Keys consist of modifiers separated by + signs, followed by an XKB key name
+    // in the end. To find an XKB name for a particular key, you may use a program
+    // like wev.
+    //
+    // "Mod" is a special modifier equal to Super when running on a TTY, and to Alt
+    // when running as a winit window.
+    //
+    // Most actions that you can bind here can also be invoked programmatically with
+    // `niri msg action do-something`.
+
+    // Mod-Shift-/, which is usually the same as Mod-?,
+    // shows a list of important hotkeys.
+    Mod+Shift+Slash { show-hotkey-overlay; }
+
+    // Suggested binds for running programs: terminal, app launcher, screen locker.
+    Super+Space hotkey-overlay-title="App Launcher" { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    Mod+Shift+D hotkey-overlay-title="Clipboard" { spawn "noctalia-shell" "ipc" "call" "launcher" "clipboard"; }
+    Mod+Shift+Period hotkey-overlay-title="Emoji Picker" { spawn "noctalia-shell" "ipc" "call" "launcher" "emoji"; }
+    Mod+Shift+P hotkey-overlay-title="Password Manager" { spawn "noctalia-shell" "ipc" "call" "plugin:rbw-provider" "toggle"; }
+    Mod+G hotkey-overlay-title="Janet" { spawn "noctalia-shell" "ipc" "call" "plugin:nostr-chat" "toggle"; }
+    Mod+P hotkey-overlay-title="Display Config" { spawn "noctalia-shell" "ipc" "call" "plugin:display-config" "toggle"; }
+    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "noctalia-shell" "ipc" "call" "lockScreen" "lock"; }
+    
+    // Choosers — noctalia launcher providers (replaces the old fuzzel-based
+    // audio-chooser / internet-chooser scripts from the KDE era)
+    Mod+A hotkey-overlay-title="Audio Chooser" { spawn "noctalia-shell" "ipc" "call" "plugin:audio-provider" "toggle"; }
+    // Mod+N hotkey-overlay-title="Internet Chooser" { spawn "noctalia-shell" "ipc" "call" "plugin:internet-provider" "toggle"; }
+
+    // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
+    // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
+    // For example, this is a standard bind to toggle the screen reader (orca).
+    Super+Alt+S allow-when-locked=true hotkey-overlay-title=null { spawn-sh "pkill orca || exec orca"; }
+
+    // Audio (via Noctalia OSD)
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "increase"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "decrease"; }
+    XF86AudioMute        allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "muteOutput"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "volume" "muteInput"; }
+
+    // Media (via Noctalia OSD)
+    XF86AudioPlay allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "media" "playPause"; }
+    XF86AudioStop allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "media" "stop"; }
+    XF86AudioPrev allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "media" "previous"; }
+    XF86AudioNext allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "media" "next"; }
+
+    // Brightness (via Noctalia OSD)
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "brightness" "increase"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "noctalia-shell" "ipc" "call" "brightness" "decrease"; }
+
+    // Open/close the Overview: a zoomed-out view of workspaces and windows.
+    // You can also move the mouse into the top-left hot corner,
+    // or do a four-finger swipe up on a touchpad.
+    Mod+O repeat=false { toggle-overview; }
+
+    Mod+Q repeat=false { close-window; }
+
+    Alt+J  { focus-column-left; }
+    Alt+L  { focus-column-right; }
+
+    Alt+Shift+J  { move-column-left; }
+    Alt+Shift+L  { move-column-right; }
+
+    Mod+Shift+Left  { focus-monitor-left; }
+    Mod+Shift+Down  { focus-monitor-down; }
+    Mod+Shift+Up    { focus-monitor-up; }
+    Mod+Shift+Right { focus-monitor-right; }
+
+    Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+
+    Alt+K       { focus-workspace-down; }
+    Alt+I       { focus-workspace-up; }
+    Alt+Shift+K { move-column-to-workspace-down; }
+    Alt+Shift+I { move-column-to-workspace-up; }
+
+    // You can bind mouse wheel scroll ticks using the following syntax.
+    // These binds will change direction based on the natural-scroll setting.
+    //
+    // To avoid scrolling through workspaces really fast, you can use
+    // the cooldown-ms property. The bind will be rate-limited to this value.
+    // You can set a cooldown on any bind, but it's most useful for the wheel.
+    Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+    Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+    Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+
+    Mod+WheelScrollRight      { focus-column-right; }
+    Mod+WheelScrollLeft       { focus-column-left; }
+    Mod+Ctrl+WheelScrollRight { move-column-right; }
+    Mod+Ctrl+WheelScrollLeft  { move-column-left; }
+
+    // Usually scrolling up and down with Shift in applications results in
+    // horizontal scrolling; these binds replicate that.
+    Mod+Shift+WheelScrollDown      { focus-column-right; }
+    Mod+Shift+WheelScrollUp        { focus-column-left; }
+    Mod+Ctrl+Shift+WheelScrollDown { move-column-right; }
+    Mod+Ctrl+Shift+WheelScrollUp   { move-column-left; }
+
+    // For example, with 2 workspaces + 1 empty, indices 3, 4, 5 and so on
+    // will all refer to the 3rd workspace.
+    Alt+Q { focus-workspace 1; }
+    Alt+W { focus-workspace 2; }
+    Alt+E { focus-workspace 3; }
+    Alt+Shift+Q { move-column-to-workspace 1; }
+    Alt+Shift+W { move-column-to-workspace 2; }
+    Alt+Shift+E { move-column-to-workspace 3; }
+
+    Alt+O { switch-preset-column-width; }
+    // Mod+F { maximize-column; }
+    Alt+Return { fullscreen-window; }
+
+    // Expand the focused column to space not taken up by other fully visible columns.
+    // Makes the column "fill the rest of the space".
+    // Mod+Ctrl+F { expand-column-to-available-width; }
+
+    // Mod+C { center-column; }
+
+    // Center all fully visible columns on screen.
+    // Mod+Ctrl+C { center-visible-columns; }
+
+    Mod+Minus { set-column-width "-10%"; }
+    Mod+Equal { set-column-width "+10%"; }
+
+    // Move the focused window between the floating and the tiling layout.
+    Alt+F       { toggle-window-floating; }
+
+    // Toggle tabbed column display mode.
+    // Windows in this column will appear as vertical tabs,
+    // rather than stacked on top of each other.
+    // Mod+W { toggle-column-tabbed-display; }
+
+    // Actions to switch layouts.
+    // Note: if you uncomment these, make sure you do NOT have
+    // a matching layout switch hotkey configured in xkb options above.
+    // Having both at once on the same hotkey will break the switching,
+    // since it will switch twice upon pressing the hotkey (once by xkb, once by niri).
+    // Mod+Space       { switch-layout "next"; }
+    // Mod+Shift+Space { switch-layout "prev"; }
+
+    Print { screenshot; }
+    Ctrl+Print { screenshot-screen; }
+    Alt+Print { screenshot-window; }
+
+    // Applications such as remote-desktop clients and software KVM switches may
+    // request that niri stops processing the keyboard shortcuts defined here
+    // so they may, for example, forward the key presses as-is to a remote machine.
+    // It's a good idea to bind an escape hatch to toggle the inhibitor,
+    // so a buggy application can't hold your session hostage.
+    //
+    // The allow-inhibiting=false property can be applied to other binds as well,
+    // which ensures niri always processes them, even when an inhibitor is active.
+    Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
+
+    // The quit action will show a confirmation dialog to avoid accidental exits.
+    Mod+Shift+E { quit; }
+
+    // Powers off the monitors. To turn them back on, do any input like
+    // moving the mouse or pressing any other key.
+    // Mod+Shift+P { power-off-monitors; }
+}

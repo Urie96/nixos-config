@@ -1,0 +1,42 @@
+{
+  "ap": {
+    "body": "table.insert($0)",
+    "prefix": "ap"
+  },
+  "class": {
+    "body": "${1:className} = {}\n$1.${2:new} = function($3)\n  local ${4:varName} = ${5:value}\n  ${6: --code}\n  return $4\nend\n",
+    "prefix": "class"
+  },
+  "elseif": {
+    "body": "elseif $1 then",
+    "prefix": "elseif"
+  },
+  "fori": {
+    "body": "for _, ${2:v} in ipairs(${1:{}}) do\n  $0\nend\n",
+    "prefix": "fori"
+  },
+  "forr": {
+    "body": "for ${2:k}, ${3:v} in pairs(${1:{}}) do\n  $0\nend\n",
+    "prefix": "forr"
+  },
+  "func": {
+    "body": "function $1()\n  $0\nend\n",
+    "prefix": "func"
+  },
+  "if": {
+    "body": "if $1 then\n  $2\nend\n",
+    "prefix": "if"
+  },
+  "local": {
+    "body": "local ${1} = ${0}",
+    "prefix": "local"
+  },
+  "req": {
+    "body": "local $0 = require(\"$1\")",
+    "prefix": "req"
+  },
+  "while": {
+    "body": "while ${1:true} do\n  $0\nend\n",
+    "prefix": "while"
+  }
+}

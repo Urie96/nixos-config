@@ -1,0 +1,99 @@
+// https://yalter.github.io/niri/Configuration:-Input
+input {
+    keyboard {
+        xkb {
+            layout "us"
+
+            // For example:
+            // layout "us,ru"
+            // options "grp:win_space_toggle,compose:ralt,ctrl:nocaps"
+
+            // If this section is empty, niri will fetch xkb settings
+            // from org.freedesktop.locale1. You can control these using
+            // localectl set-x11-keymap.
+        }
+        // Enable numlock on startup, omitting this setting disables it.
+        numlock
+        repeat-delay 200
+        repeat-rate 40
+    }
+
+    touchpad {
+        tap
+        natural-scroll
+    }
+
+    mouse {}
+
+    trackpoint {}
+
+    warp-mouse-to-focus
+}
+
+// https://yalter.github.io/niri/Configuration:-Layout
+layout {
+    gaps 8
+
+    center-focused-column "never"
+
+    // You can customize the widths that "switch-preset-column-width" (Mod+R) toggles between.
+    preset-column-widths {
+        proportion 0.5
+        proportion 0.75
+        proportion 1.0
+    }
+
+    // You can also customize the heights that "switch-preset-window-height" (Mod+Shift+R) toggles between.
+    // preset-window-heights { }
+
+    default-column-width { proportion 1.0; }
+
+    focus-ring {
+        width 3
+        active-color "#7fc8ff"
+        inactive-color "#505050"
+    }
+
+    border {
+        off
+    }
+
+    shadow {
+        // Uncomment the next line to enable shadows.
+        // on
+        softness 30
+        spread 5
+        offset x=0 y=5
+        color "#0007"
+    }
+}
+
+spawn-at-startup "noctalia-shell"
+
+// https://yalter.github.io/niri/Configuration:-Animations
+animations {
+}
+
+// Named workspaces (matching sway layout: web, dev, im)
+workspace "1:web"
+workspace "2:dev"
+workspace "3:im"
+
+// 请求应用不要绘制边框
+prefer-no-csd
+
+screenshot-path "~/Pictures/Screenshots/screenshot-%Y-%m-%d-%H-%M-%S.png"
+
+hotkey-overlay {
+    // 启动时不要弹快捷键说明
+    skip-at-startup
+}
+
+debug {
+    // Allows notification actions and window activation from Noctalia.
+    honor-xdg-activation-with-invalid-serial
+}
+
+include "./keymap.kdl"
+include "./rule.kdl"
+include "./outputs.kdl"

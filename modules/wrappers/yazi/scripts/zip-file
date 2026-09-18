@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ $# -eq 0 ]; then
+  echo "missing file"
+  exit 1
+fi
+
+# Convert to relative paths
+relative_file_list=()
+for file in "$@"; do
+  relative_file=$(realpath --relative-to="$PWD" "$file")
+  relative_file_list+=("$relative_file")
+done
+
+# Get base name from first file
+first_file="${relative_file_list[0]}"
+zip_file_name=$(basename "$first_file")
+
+# Present compression options
+echo "Select compression format:"
+echo "1) zip"
+echo "2) tar"
+echo "3) 7z"
+read -p "Enter choice (1-3): " choice
+
+# Execute compression based on user choice
+case $choice in
+1)
+  zip -r "${zip_file_name}.zip" "${relative_file_list[@]}"
+  ;;
+2)
+  tar -czvf "${zip_file_name}.tar.gz" "${relative_file_list[@]}"
+  ;;
+3)
+  7z a "${zip_file_name}.7z" "${relative_file_list[@]}"
+  ;;
+*)
+  echo "Invalid choice"
+  exit 1
+  ;;
+esac

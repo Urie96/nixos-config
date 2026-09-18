@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+COOKIECUTTER_CACHE_DIR="$HOME/.cookiecutters/cookiecutter-templates"
+GITHUB_REPO_URL="https://github.com/Urie96/cookiecutter-templates/archive/refs/heads/main.tar.gz"
+
+confirm() {
+  local prompt="$1"
+  read -n 1 -p "$prompt" response
+  echo
+  [[ "$response" =~ [yY] ]]
+}
+
+download_templates() {
+  echo "Downloading templates from GitHub..."
+
+  # 创建临时目录
+  local temp_dir
+  temp_dir=$(mktemp -d)
+
+  # 下载并解压
+  curl -L "$GITHUB_REPO_URL" -o "$temp_dir/templates.tar.gz"
+  tar -xzf "$temp_dir/templates.tar.gz" -C "$temp_dir"
+
+  # 清理旧的缓存目录（如果存在）
+  if [[ -d "$COOKIECUTTER_CACHE_DIR" ]]; then
+    rm -rf "$COOKIECUTTER_CACHE_DIR"
+  fi
+
+  mkdir -p "$(dirname "$COOKIECUTTER_CACHE_DIR")"
+
+  # 移动解压后的内容到缓存目录
+  mv "$temp_dir/cookiecutter-templates-main" "$COOKIECUTTER_CACHE_DIR"
+
+  # 清理临时目录
+  rm -rf "$temp_dir"
+
+  echo "Templates downloaded to $COOKIECUTTER_CACHE_DIR"
+}
+
+get_templates_from_cache() {
+  # 从缓存目录读取模板列表
+  local config_file="$COOKIECUTTER_CACHE_DIR/cookiecutter.json"
+
+  if [[ -f "$config_file" ]]; then
+    jq -r '.templates | keys[]' "$config_file"
+  else
+    echo "Error: cookiecutter.json not found in cache directory" >&2
+    return 1
+  fi
+}
+
+main() {
+  # 检查缓存目录是否存在
+  if [[ -d "$COOKIECUTTER_CACHE_DIR" ]]; then
+    echo "Found cached templates in $COOKIECUTTER_CACHE_DIR"
+
+    if confirm "Do you want to re-download templates? [y/N]: "; then
+      download_templates
+    else
+      echo "Using cached templates..."
+    fi
+  else
+    echo "No cached templates found."
+    download_templates
+  fi
+
+  local templates
+  templates=$(get_templates_from_cache)
+
+  # 使用fzf进行模糊选择
+  local selected
+  selected=$(echo "$templates" | fzf --prompt="Select template: ")
+
+  if [[ -z "$selected" ]]; then
+    echo "No template selected. Exiting."
+    exit 0
+  fi
+
+  # 使用选择的模板初始化项目
+  echo "Initializing project with template: $selected"
+  cookiecutter cookiecutter-templates --directory "$selected"
+}
+
+main "$@"

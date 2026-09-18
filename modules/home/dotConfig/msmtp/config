@@ -1,0 +1,36 @@
+# msmtp configuration for sending mail
+
+# Set default values
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        ~/.msmtp.log
+
+# qq account
+account        qq
+host           smtp.qq.com
+port           587
+from           urie96@qq.com
+user           urie96@qq.com
+passwordeval   "rbw get 'qq imap'"
+
+# ustc account
+account        ustc
+host           mail.ustc.edu.cn
+port           587
+from           urie@mail.ustc.edu.cn
+user           urie@mail.ustc.edu.cn
+passwordeval   "rbw get 'ustc imap'"
+
+# gmail account
+account        gmail
+host           smtp.gmail.com
+port           587
+from           lubui.com@gmail.com
+user           lubui.com@gmail.com
+passwordeval   "rbw get 'gmail imap'"
+
+
+# Set qq as default
+account default : qq

@@ -1,0 +1,138 @@
+{
+  "ap": {
+    "body": "${1} = append(${1}, ${0})",
+    "prefix": "ap"
+  },
+  "ctx": {
+    "body": "ctx context.Context",
+    "prefix": "ctx"
+  },
+  "defer": {
+    "body": "defer func() {\n  if err := recover(); err != nil {\n    fmt.Println(err, string(debug.Stack()))\n  }\n}()\n$0\n",
+    "prefix": "defer"
+  },
+  "em": {
+    "body": "errors.WithMessage(err, \"${1:error}\")",
+    "prefix": "em"
+  },
+  "emf": {
+    "body": "errors.WithMessagef(err, \"${1:error %v}\",${2:nil})",
+    "prefix": "emf"
+  },
+  "en": {
+    "body": "errors.Errorf(\"${1:new error}\")",
+    "prefix": "en"
+  },
+  "es": {
+    "body": "errors.WithStack(err)",
+    "prefix": "es"
+  },
+  "fori": {
+    "body": "for ${1:i} := 0; $1 < ${2:100}; $1++ {\n  $0\n}\n",
+    "prefix": "fori"
+  },
+  "forr": {
+    "body": "for _, ${1:item} := range ${2:list} {\n  $0\n}\n",
+    "prefix": "forr"
+  },
+  "func": {
+    "body": "func $1() {\n  $0\n}\n",
+    "prefix": "func"
+  },
+  "handle": {
+    "body": "func (s *$3) $1(ctx context.Context, req *$2.$1Request) (resp *$2.$1Response, err error) {\n  resp := &$2.$1Response{}\n  $4\n  return resp, nil\n}\"\n",
+    "prefix": "handle"
+  },
+  "ife": {
+    "body": "if err != nil {\n  return ${1:err}\n}\n",
+    "prefix": "ife"
+  },
+  "ifelse": {
+    "body": "if ${1:true} {\n  $0\n} else {\n\n}\n",
+    "prefix": "ifelse"
+  },
+  "imp": {
+    "body": "import (\n  \"$1\"\n)\n",
+    "prefix": "imp"
+  },
+  "interface": {
+    "body": "type ${1:interfaceName} interface {\n  $2\n}\n",
+    "prefix": "interface"
+  },
+  "jsonmarshal": {
+    "body": "b, err := json.Marshal(${1:object})\nif err != nil {\n  // logs.CtxError(ctx, \"marshal failed for %T, err: %v\", $1, err)\n  return errors.WithMessagef(err, \"marshal failed for %T\", $1)\n}\n",
+    "prefix": "jsonmarshal"
+  },
+  "jsonunmarshal": {
+    "body": "err := json.Unmarshal([]byte(${1:bytes}), &${2:struct})\nif err != nil {\n  // logs.CtxError(ctx, \"unmarshal failed for %T, json: %s, err: %v\", $2, $1, err)\n  return errors.WithMessagef(err, \"unmarshal failed for %T, json: %s\", $2, $1)\n}\n",
+    "prefix": "jsonunmarshal"
+  },
+  "lf": {
+    "body": "log.Printf(\"$1\", ${2})",
+    "prefix": "lf"
+  },
+  "loge": {
+    "body": "logs.CtxError(ctx, $1)",
+    "prefix": "loge"
+  },
+  "logi": {
+    "body": "logs.CtxInfo(ctx, $1)",
+    "prefix": "logi"
+  },
+  "logjson": {
+    "body": "{\n  b, _ := json.MarshalIndent($1, \"\", \"  \")\n  logs.CtxInfo(ctx, \"$1: %s\", string(b))\n}\n",
+    "prefix": "logjson"
+  },
+  "logw": {
+    "body": "logs.CtxWarn(ctx, $1)",
+    "prefix": "logw"
+  },
+  "lp": {
+    "body": "log.Println(\"$1\")",
+    "prefix": "lp"
+  },
+  "main": {
+    "body": "package main\n\nfunc main() {\n  $1\n}\n",
+    "prefix": "main"
+  },
+  "print": {
+    "body": "fmt.Println($1)",
+    "prefix": "print"
+  },
+  "printf": {
+    "body": "fmt.Printf(\"$1\", $2)",
+    "prefix": "printf"
+  },
+  "printjson": {
+    "body": "{\n  b, _ := json.MarshalIndent(${1:object}, \"\", \"  \")\n  fmt.Printf(\"$1: %s\\n\", string(b))\n}\n",
+    "prefix": "printjson"
+  },
+  "re": {
+    "body": "return err",
+    "prefix": "re"
+  },
+  "rn": {
+    "body": "return nil",
+    "prefix": "rn"
+  },
+  "rne": {
+    "body": "return nil, err",
+    "prefix": "rne"
+  },
+  "select": {
+    "body": "select {\ncase $1:\n  $0\n}\n",
+    "prefix": "select"
+  },
+  "struct": {
+    "body": "type $1 struct {\n  $2\n}\n",
+    "prefix": "struct"
+  },
+  "switch": {
+    "body": "switch $1 {\ncase $2:\n  $0\ndefault:\n}",
+    "prefix": "switch"
+  },
+  "test": {
+    "body": "func Test$1(t *testing.T) {\n  $2\n}\n",
+    "prefix": "test"
+  }
+}

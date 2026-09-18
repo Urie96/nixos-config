@@ -1,0 +1,265 @@
+patch:
+  'style/vertical_gap': 4
+  'style/keyboard_height': 210 # 键盘高度
+  "style/key_font": [font.ttf]
+  "style/symbol_font": [font.ttf]
+  'style/keyboard_padding': 5 # 竖屏模式下，屏幕左右两侧与键盘的距离（减少曲面屏误触）
+  'style/enter_labels/default': '↩'
+  'preset_keys/Return1/label': '↩'
+  'preset_keys/undo/label': '󱀼'
+  'preset_keys/Color_switch/label': '󰔎'
+  'preset_keys/Theme_settings/label': '󰌓'
+  'preset_keys/Menu/label': ''
+  'preset_keys/Shift_L/label': '󰘶'
+  'preset_keys/copy/label': '󰆏'
+  'preset_keys/space/label': '╰───╯'
+  'preset_keys/Escape/label': 'Esc'
+  'preset_keys/Tab/label': 'Tab'
+  'preset_keys/paste_clip/label': ''
+  'preset_keys/delimiter/label': ''
+  'preset_keys/cut/label': '󰆐'
+  'preset_keys/select_all/label': '󰒆'
+  'preset_keys/Keyboard_bqrw/label': ''
+  'preset_keys/Keyboard_number/label': ''
+  'preset_keys/Home/label': '󰘀'
+  'preset_keys/End/label': '󰘁'
+  'preset_keys/Page_Up/label': ''
+  'preset_keys/Page_Down/label': ''
+  'preset_keys/BackSpace/label': '󰭜'
+  'preset_keys/Control_L': {label: 'Ctl', functional: false, send: Control_L}
+  'preset_keys/Alt_L': {label: 'Alt', functional: false, send: Alt_L}
+  'preset_keys/Keyboard_symbol': { label: '󱔁', functional: false, send: Eisu_toggle, select: symbol }
+  'preset_keys/Keyboard_symbol_cn': { label: '󱔁', functional: false, send: Eisu_toggle, select: symbol_cn }
+  'preset_keys/Keyboard_code': { label: '', functional: false, send: Eisu_toggle, select: code }
+  # 深色模式改用「标准配色（深色）」镜像版（原 dark_scheme: steam 缺少全部键盘按键色）
+  'preset_color_schemes/default/dark_scheme': dark
+  'preset_color_schemes/dark':
+    name: "标准配色（深色）"
+    light_scheme: default
+    back_color: 0xff171614 #候选区背景
+    candidate_separator_color: 0xff1f1e1c #候选分割背景
+    candidate_text_color: 0xffffffff #候选文本
+    comment_text_color: 0xffa9a7a7 #提示
+    hilited_back_color: 0xff171614 #高亮编码背景
+    hilited_candidate_back_color: 0xff314259 #高亮候选背景
+    hilited_candidate_text_color: 0xffffffff #高亮候选文本
+    hilited_comment_text_color: 0xffa9a7a7 #高亮提示
+    hilited_key_back_color: 0xff4a6a8a #高亮按键背景
+    hilited_key_symbol_color: 0xffffffff #高亮按键符号
+    hilited_key_text_color: 0xffffffff #高亮按键文本
+    hilited_off_key_back_color: 0xff3a3a3a #高亮按键关闭状态背景
+    hilited_off_key_text_color: 0xffffffff #高亮按键关闭状态文本
+    hilited_text_color: 0xff528ccd #高亮编码
+    key_back_color: 0xff232323 #按键背景
+    key_border_color: 0xff4a4a4a #按键边框
+    key_symbol_color: 0xffa9a7a7 #按键符号
+    key_text_color: 0xffffffff #按键文本
+    keyboard_back_color: 0xff171614 #键盘背景
+    label_color: 0xff528ccd #标签
+    off_key_back_color: 0xff2d2d2d #按键关闭状态背景
+    off_key_text_color: 0xffa9a7a7 #按键关闭状态文本
+    preview_back_color: 0xff2d2d2d #按键提示背景
+    preview_text_color: 0xff528ccd #按键提示文本
+    text_color: 0xff528ccd #编码
+    text_back_color: 0xff232323 #编码区背景
+    bkg: 0xff232323 #空格键背景色
+    tkg: 0xffffffff #空格键文字颜色
+    benter: 0xff3d7bbf #回车键背景色
+    tenter: 0xffffffff #回车键文字颜色
+    bgn: 0xff3a3a3a #功能键背景色
+    tgn: 0xffffffff #功能键文字颜色
+    bbs: 0xff3a3a3a #退格键背景色
+    tbs: 0xffffffff #退格键文字颜色
+    baoe: 0xff232323 #aoeiu背景色
+    taoe: 0xff528ccd #aoeiu文字颜色
+    bh1: 0xff232323 #第一行背景色
+    th1: 0xffffffff #第一行文字颜色
+    bh2: 0xff232323 #第二行背景色
+    th2: 0xffffffff #第二行文字颜色
+    bh3: 0xff232323 #第三行背景色
+    th3: 0xffffffff #第三行文字颜色
+    bh4: 0xff232323 #第四行背景色
+    th4: 0xffffffff #第四行文字颜色
+  'preset_keyboards/default':
+    name: 26键默认布局
+    width: 10
+    # height: 48
+    ascii_mode: 0
+    keys:
+      - {click: q, swipe_up: 1, key_back_color: bh1, key_text_color: th1}
+      - {click: w, swipe_up: 2, key_back_color: bh1, key_text_color: th1}
+      - {click: e, swipe_up: 3, key_back_color: bh1, key_text_color: th1}
+      - {click: r, swipe_up: 4, key_back_color: bh1, key_text_color: th1}
+      - {click: t, swipe_up: 5, key_back_color: bh1, key_text_color: th1}
+      - {click: y, swipe_up: 6, key_back_color: bh1, key_text_color: th1}
+      - {click: u, swipe_up: 7, key_back_color: bh1, key_text_color: th1}
+      - {click: i, swipe_up: 8, key_back_color: bh1, key_text_color: th1}
+      - {click: o, swipe_up: 9, key_back_color: bh1, key_text_color: th1}
+      - {click: p, swipe_up: 0, key_back_color: bh1, key_text_color: th1}
+
+      - {width: 5, key_back_color: bh2, key_text_color: th2}
+      - {click: a, swipe_up: select_all, key_back_color: bh2, key_text_color: th2}
+      - {click: s, swipe_up: '@', key_back_color: bh2, key_text_color: th2}
+      - {click: d, swipe_up: '#', key_back_color: bh2, key_text_color: th2}
+      - {click: f, swipe_up: '_', key_back_color: bh2, key_text_color: th2}
+      - {click: g, swipe_up: '%', key_back_color: bh2, key_text_color: th2}
+      - {click: h, swipe_up: '!', swipe_down: "+", key_back_color: bh2, key_text_color: th2}
+      - {click: j, swipe_up: '&', swipe_down: "-", key_back_color: bh2, key_text_color: th2}
+      - {click: k, swipe_up: '*', swipe_down: "_", key_back_color: bh2, key_text_color: th2}
+      - {click: l, swipe_up: '(){Left}', swipe_down: "=", key_back_color: bh2, key_text_color: th2}
+      - {width: 5, key_back_color: bh2, key_text_color: th2}
+
+      - {click: Shift_L, key_text_offset_x: -3, key_text_size: 25, composing: 'delimiter', width: 15, hilited_key_back_color: benter, key_back_color: bbs, key_text_color: tbs}
+      - {click: z, swipe_up: 'undo', key_back_color: bh3, key_text_color: th3}
+      - {click: x, swipe_up: cut, key_back_color: bh3, key_text_color: th3}
+      - {click: c, swipe_up: copy, swipe_down: ' ', key_back_color: bh3, key_text_color: th3}
+      - {click: v, swipe_up: paste_clip, key_back_color: bh3, key_text_color: th3}
+      - {click: b, swipe_up: ";", swipe_down: "\\", key_back_color: bh3, key_text_color: th3}
+      - {click: n, swipe_up: ":", key_back_color: bh3, key_text_color: th3}
+      - {click: m, swipe_up: '?', swipe_down: "|", key_back_color: bh3, key_text_color: th3}
+      - {click: BackSpace, key_text_offset_x: -5, key_text_size: 25, width: 15, key_back_color: bbs, key_text_color: tbs}
+
+      - {click: Keyboard_number, swipe_up: Keyboard_code, label_symbol: '', key_text_size: 25, width: 12.5, key_back_color: bgn, key_text_color: tgn}
+      - {click: Keyboard_symbol_cn, ascii: Keyboard_symbol, key_text_size: 20, width: 12.5, key_back_color: bgn, key_text_color: tgn}
+      - {click: ',', label: '，', swipe_up: '!', key_back_color: bh4, key_text_color: th4}
+      - {click: space, key_text_offset_y: 7, swipe_left: "Left", swipe_right: "Right", swipe_up: 'Up', swipe_down: 'Down', width: 30, key_back_color: bkg, key_text_color: tkg}
+      - {click: '.', label: '。', swipe_up: '?', key_back_color: bh4, key_text_color: th4}
+      - {click: '/', swipe_up: liquid_keyboard_switch , key_text_size: "18", key_back_color: bh4, key_text_color: th4}
+      - {click: Return, composing: Return1, swipe_up: Escape, width: 15, key_back_color: benter, key_text_color: tenter}
+
+  'preset_keyboards/code':
+    name: Code布局
+    hide_input_bar: true
+    width: 10
+    # height: 48
+    ascii_mode: 1
+    keys:
+      # 第一行：长按=大写，上滑=数字，下滑=Ctrl+字母，右滑=Alt+字母
+      - {click: q, long_click: Q, swipe_up: 1, swipe_down: '{Control+q}', key_back_color: bh1, key_text_color: th1}
+      - {click: w, long_click: W, swipe_up: 2, swipe_down: '{Control+w}', key_back_color: bh1, key_text_color: th1}
+      - {click: e, long_click: E, swipe_up: 3, swipe_down: '{Control+e}', key_back_color: bh1, key_text_color: th1}
+      - {click: r, long_click: R, swipe_up: 4, swipe_down: '{Control+r}', key_back_color: bh1, key_text_color: th1}
+      - {click: t, long_click: T, swipe_up: 5, swipe_down: '{Control+t}', key_back_color: bh1, key_text_color: th1}
+      - {click: y, long_click: Y, swipe_up: 6, swipe_down: '{Control+y}', key_back_color: bh1, key_text_color: th1}
+      - {click: u, long_click: U, swipe_up: 7, swipe_down: '{Control+u}', key_back_color: bh1, key_text_color: th1}
+      - {click: i, long_click: I, swipe_up: 8, swipe_down: '{Control+i}', key_back_color: bh1, key_text_color: th1}
+      - {click: o, long_click: O, swipe_up: 9, swipe_down: '{Control+o}', key_back_color: bh1, key_text_color: th1}
+      - {click: p, long_click: P, swipe_up: 0, swipe_down: '{Control+p}', key_back_color: bh1, key_text_color: th1}
+
+      # 第二行：长按=大写，上滑=符号
+      - {width: 5, key_back_color: bh2, key_text_color: th2}
+      - {click: a, long_click: A, swipe_up: '/', swipe_down: '{Control+a}', key_back_color: bh2, key_text_color: th2}
+      - {click: s, long_click: S, swipe_up: '-', swipe_right: '+', swipe_down: '{Control+s}', key_back_color: bh2, key_text_color: th2}
+      - {click: d, long_click: D, swipe_up: '_', swipe_right: '=', swipe_down: '{Control+d}', key_back_color: bh2, key_text_color: th2}
+      - {click: f, long_click: F, swipe_up: '|', swipe_right: '#', swipe_down: '{Control+f}', key_back_color: bh2, key_text_color: th2}
+      - {click: g, long_click: G, swipe_up: '&', swipe_right: '%', swipe_down: '{Control+g}', key_back_color: bh2, key_text_color: th2}
+      - {click: h, long_click: H, swipe_up: '$', swipe_right: '@', swipe_down: '{Control+h}', key_back_color: bh2, key_text_color: th2}
+      - {click: j, long_click: J, swipe_up: '~', swipe_down: '{Control+j}', key_back_color: bh2, key_text_color: th2}
+      - {click: k, long_click: K, swipe_up: ',', swipe_down: '{Control+k}', key_back_color: bh2, key_text_color: th2}
+      - {click: l, long_click: L, swipe_up: '.', swipe_down: '{Control+l}', key_back_color: bh2, key_text_color: th2}
+      - {width: 5, key_back_color: bh2, key_text_color: th2}
+
+      # 第三行：长按=大写，上滑=符号
+      - {click: Tab, swipe_up: Shift_L, width: 15, hilited_key_back_color: benter, key_back_color: bbs, key_text_color: tbs}
+      - {click: z, long_click: Z, swipe_up: '\', swipe_down: '{Control+z}', swipe_left: '(', swipe_right: ')', key_back_color: bh3, key_text_color: th3}
+      - {click: x, long_click: X, swipe_up: '*', swipe_down: '{Control+x}', swipe_left: '[', swipe_right: ']', key_back_color: bh3, key_text_color: th3}
+      - {click: c, long_click: C, swipe_up: '?', swipe_down: '{Control+c}', swipe_left: '{', swipe_right: '}', key_back_color: bh3, key_text_color: th3}
+      - {click: v, long_click: V, swipe_up: '"', swipe_down: '{Control+v}', swipe_left: '<', swipe_right: '>', key_back_color: bh3, key_text_color: th3}
+      - {click: b, long_click: B, swipe_up: "'", swipe_down: '{Control+b}', key_back_color: bh3, key_text_color: th3}
+      - {click: n, long_click: N, swipe_up: ';', swipe_down: '{Control+n}', key_back_color: bh3, key_text_color: th3}
+      - {click: m, long_click: M, swipe_up: ':', swipe_down: '{Control+m}', key_back_color: bh3, key_text_color: th3}
+      - {click: BackSpace, key_text_offset_x: -5, key_text_size: 25, width: 15, key_back_color: bbs, key_text_color: tbs}
+
+      # 第四行
+      - {click: Alt_L, swipe_up: Keyboard_default, width: 15, key_back_color: bgn, key_text_color: tgn}
+      - {click: Control_L, swipe_left: Home, swipe_right: End, swipe_up: Page_Up, swipe_down: Page_Down,  width: 20, key_back_color: bgn, key_text_color: tgn}
+      - {click: space, key_text_offset_y: 7, swipe_left: Left, swipe_right: Right, swipe_up: Up, swipe_down: Down, width: 30, key_back_color: bkg, key_text_color: tkg}
+      - {click: Escape, swipe_left: Left, swipe_right: Right, swipe_up: Up, swipe_down: Down, width: 20, key_back_color: bgn, key_text_color: tgn}
+      - {click: Return, composing: Return1, width: 15, key_back_color: benter, key_text_color: tenter}
+
+  'preset_keyboards/symbol':
+    author: 'urie'
+    name: symbol
+    width: 11.111
+    height: 35
+    ascii_mode: 1
+    reset_ascii_mode: false
+    keys:
+      - { click: '[]{Left}' }
+      - { click: "'" }
+      - { click: '+' }
+      - { click: '-' }
+      - { click: '*' }
+      - { click: '^' }
+      - { click: '@' }
+      - { click: '>' }
+      - { click: '$' }
+
+      - { click: '(){Left}' }
+      - { click: '"' }
+      - { click: '=' }
+      - { click: '_' }
+      - { click: '&' }
+      - { click: '|' }
+      - { click: '/' }
+      - { click: '\' }
+      - { click: '?' }
+
+      - { click: '{}{Left}' }
+      - { click: '`' }
+      - { click: '#' }
+      - { click: '~' }
+      - { click: '!' }
+      - { click: '%' }
+      - { click: '<' }
+      - { click: '>' }
+      - { click: 'BackSpace', key_text_offset_x: -5, key_back_color: bbs, key_text_size: 20, key_text_color: tbs }
+
+      - {click: Keyboard_default, long_click: ':', width: 17.5, key_back_color: bgn, key_text_color: 'tgn'}
+      - {click: Keyboard_number, width: 17.5, key_back_color: bgn, key_text_color: tgn}
+      - {click: space, key_text_offset_y: 7, width: 30, key_back_color: bgn, key_text_color: tgn}
+      - {click: Keyboard_bqrw, key_text_offset_x: -3, width: 17.5, key_back_color: bgn, key_text_color: tgn}
+      - {click: Return, long_click: Menu, width: 17.5, key_back_color: benter, key_text_color: tenter}
+  'preset_keyboards/symbol_cn':
+    author: 'urie'
+    name: symbol
+    width: 11.111
+    height: 35
+    ascii_mode: 0
+    reset_ascii_mode: false
+    keys:
+      - { click: '【】{Left}' }
+      - { click: '‘’{Left}' }
+      - { click: '+' }
+      - { click: '-' }
+      - { click: '*' }
+      - { click: '……' }
+      - { click: '@' }
+      - { click: '' }
+      - { click: '¥' }
+
+      - { click: '（）{Left}' }
+      - { click: '“”{Left}' }
+      - { click: '=' }
+      - { click: '——' }
+      - { click: '&' }
+      - { click: '|' }
+      - { click: '/' }
+      - { click: '、' }
+      - { click: '？' }
+
+      - { click: '「」{Left}' }
+      - { click: '《》{Left}' }
+      - { click: '#' }
+      - { click: '~' }
+      - { click: '！' }
+      - { click: '%' }
+      - { click: '《' }
+      - { click: '》' }
+      - { click: 'BackSpace', key_text_offset_x: -5, key_back_color: bbs, key_text_size: 20, key_text_color: tbs }
+
+      - {click: Keyboard_default, long_click: ':', width: 17.5, key_back_color: bgn, key_text_color: 'tgn'}
+      - {click: Keyboard_number, long_click: Menu, swipe_up: Menu, width: 17.5, key_back_color: bgn, key_text_color: tgn}
+      - {click: space, key_text_offset_y: 7, width: 30, key_back_color: bgn, key_text_color: tgn}
+      - {click: Keyboard_bqrw, key_text_offset_x: -3, width: 17.5, key_back_color: bgn, key_text_color: tgn}
+      - {click: Return, long_click: Menu, width: 17.5, key_back_color: benter, key_text_color: tenter}

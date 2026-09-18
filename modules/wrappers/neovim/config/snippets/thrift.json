@@ -1,0 +1,10 @@
+{
+  "api": {
+    "body": "$1Response $1 (1: $1Request req),",
+    "prefix": "api"
+  },
+  "struct": {
+    "body": "struct $1Request {\n  1: $2\n\n  255: base.Base Base,\n}\n\nstruct $1Response {\n  1: $3\n\n  255: base.BaseResp BaseResp,\n}\n\n// $1Response $1(1: $1Request req)\n",
+    "prefix": "struct"
+  }
+}

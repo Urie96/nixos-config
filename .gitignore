@@ -1,0 +1,10 @@
+result*
+/.nvchecker_keyfile.toml
+/source
+.venv
+.direnv
+__pycache__
+/install-impure-pkgs
+.sisyphus
+/nix/gcroots
+/*.raw

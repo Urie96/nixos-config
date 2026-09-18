@@ -1,0 +1,70 @@
+IMAPAccount qq
+# Address to connect to
+Host imap.qq.com
+User urie96@qq.com
+PassCmd "rbw get 'qq imap'"
+# Use TLS
+TLSType IMAPS
+# The following line should work. If get certificate errors, uncomment the two
+# following lines and read the "Troubleshooting" section.
+# CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore qq-remote
+Account qq
+
+MaildirStore qq-local
+# The trailing "/" is important
+Inbox ~/mail/qq/
+SubFolders Maildir++
+
+Channel qq
+Far :qq-remote:
+Near :qq-local:
+# Automatically create missing mailboxes, both locally and on the server
+Create Both
+Expunge Both
+# Save the synchronization state files in the relevant directory
+SyncState *
+Patterns * !Virtual*
+
+IMAPAccount ustc
+Host mail.ustc.edu.cn
+User urie@mail.ustc.edu.cn
+PassCmd "rbw get 'ustc imap'"
+TLSType IMAPS
+
+IMAPStore ustc-remote
+Account ustc
+
+MaildirStore ustc-local
+Inbox ~/mail/ustc/
+SubFolders Maildir++
+
+Channel ustc
+Far :ustc-remote:
+Near :ustc-local:
+Create Both
+Expunge Both
+SyncState *
+Patterns * !Virtual*
+
+IMAPAccount gmail
+Host imap.gmail.com
+User lubui.com@gmail.com
+PassCmd "rbw get 'gmail imap'"
+TLSType IMAPS
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+Inbox ~/mail/gmail/
+SubFolders Maildir++
+
+Channel gmail
+Far :gmail-remote:
+Near :gmail-local:
+Create Both
+Expunge Both
+SyncState *
+Patterns * !Virtual*

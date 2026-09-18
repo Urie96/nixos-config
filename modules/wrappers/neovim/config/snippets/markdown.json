@@ -1,0 +1,34 @@
+{
+  "caution": {
+    "body": "> [!CAUTION]\n> $0\n",
+    "prefix": ["caution", "error", "danger"]
+  },
+  "co": {
+    "body": "```${1}\n$0\n```\n",
+    "prefix": "co"
+  },
+  "important": {
+    "body": "> [!IMPORTANT]\n> $0\n",
+    "prefix": "important"
+  },
+  "kbd": {
+    "body": "<kbd>$1</kbd>",
+    "prefix": "kbd"
+  },
+  "note": {
+    "body": "> [!NOTE]\n> $0\n",
+    "prefix": "note"
+  },
+  "table": {
+    "body": "| header1 | header2 |\n| :---: | :---: |\n| col2  | col2 |\n",
+    "prefix": "table"
+  },
+  "tip": {
+    "body": "> [!TIP]\n> $0\n",
+    "prefix": "tip"
+  },
+  "warn": {
+    "body": "> [!WARNING]\n> $0\n",
+    "prefix": "warn"
+  }
+}

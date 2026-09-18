@@ -1,0 +1,20 @@
+# 随 pkgs.rime-ice 一起安装到 $out/share/rime-data，最终链接为 ~/.config/rime。
+# 雾凇上游把 default.yaml 改名成 rime_ice_suggestion.yaml，所以这里用 __include
+# 拉回完整默认配置，再叠加个人覆盖。
+patch:
+  __include: rime_ice_suggestion:/
+
+  schema_list:
+    - schema: double_pinyin_flypy
+    # - schema: luna_pinyin_simp
+
+  menu:
+    page_size: 9
+
+  key_binder:
+    bindings:
+      - { accept: "Control+space", toggle: ascii_mode, when: always }
+      - { accept: "Escape", send: Caps_Lock, when: always }
+      - { accept: "Shift+BackSpace", send: Escape, when: has_menu }
+      - { accept: minus, send: Page_Up, when: has_menu }
+      - { accept: equal, send: Page_Down, when: has_menu }

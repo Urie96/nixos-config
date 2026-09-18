@@ -1,0 +1,48 @@
+{
+  "ap": {
+    "body": "$list = ($list + '')",
+    "prefix": "ap"
+  },
+  "def": {
+    "body": "def $1 [$2] {\n  $3\n}\n",
+    "prefix": [
+      "func",
+      "def"
+    ]
+  },
+  "endswith": {
+    "body": "str ends-with",
+    "prefix": "endswith"
+  },
+  "env": {
+    "body": "#!/usr/bin/env -S nu -n --no-std-lib --no-history",
+    "prefix": "env"
+  },
+  "forr": {
+    "body": "for \\$it in $2 {\n  $3\n}\n",
+    "prefix": "forr"
+  },
+  "if": {
+    "body": "if $1 {\n  $2\n}\n",
+    "prefix": "if"
+  },
+  "startswith": {
+    "body": "str starts-with",
+    "prefix": "startswith"
+  },
+  "switch": {
+    "body": "match $in {\n  $x if $x > 1 => { \"\" },\n  _ => { \"default\" }\n}\n",
+    "prefix": [
+      "switch",
+      "match"
+    ]
+  },
+  "table": {
+    "body": "[[${1:key}: ${2:value}${3:, }]${4:; }]",
+    "prefix": "table"
+  },
+  "with-env": {
+    "body": "with-env {X: \"Y\"} { $2 }\n",
+    "prefix": "with-env"
+  }
+}

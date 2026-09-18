@@ -1,0 +1,58 @@
+{
+  "fetchfrom": {
+    "body": "fetchFrom${1|GitHub,GitLab,Gitea,Gitiles,BitBucket,Savannah,RepoOrCz,SourceHut|} {\n  owner = \"$2\";\n  repo = \"$3\";\n  rev = \"\";\n  hash = \"\";\n};\n",
+    "prefix": "fetchfrom"
+  },
+  "fetchurl": {
+    "body": "fetchurl {\n  url = \"$0\";\n  hash = \"\";\n};\n",
+    "prefix": "fetchurl"
+  },
+  "if": {
+    "body": "if $1 then\n  $2\nelse $0\n",
+    "prefix": "if"
+  },
+  "let": {
+    "body": "let\n  $1\nin $0\n",
+    "prefix": "let"
+  },
+  "listtoattrs": {
+    "body": "builtins.listToAttrs [\n    {\n      name = \"foo\";\n      value = 123;\n    }\n  ];\n",
+    "prefix": "listtoattrs"
+  },
+  "mapattrs'": {
+    "body": "lib.mapAttrs' (name: value: lib.nameValuePair (\"foo_\" + name) (\"bar-\" + value)) {\n  x = \"a\";\n  y = \"b\";\n};\n",
+    "prefix": "mapattrs'"
+  },
+  "mapattrstolist": {
+    "body": "lib.mapAttrsToList (name: value: name + value) { x = \"a\"; y = \"b\"; }\n",
+    "prefix": "mapattrstolist"
+  },
+  "maplist": {
+    "body": "builtins.map (x: \"foo\" + x) [ \"bar\" \"bla\" \"abc\" ]\n",
+    "prefix": "maplist"
+  },
+  "meta": {
+    "body": "meta = {\n  description = \"$1\";\n  homepage = \"$2\";\n  license = lib.licenses.$3;\n  maintainers = with lib.maintainers; [ $0 ];\n};\n",
+    "prefix": "meta"
+  },
+  "mkd": {
+    "body": "stdenv.mkDerivation (finalAttrs: {\n  pname = \"$1\";\n  version = \"$2\";\n\n  src = $3\n\n  nativeBuildInputs = [\n    $4\n  ];\n  buildInputs = [\n    $0\n  ];\n})\n",
+    "prefix": "mkd"
+  },
+  "pkg": {
+    "body": "{\n  lib,\n  config,\n  pkgs, \n  ...\n}:\n\n$0\n",
+    "prefix": "pkg"
+  },
+  "runcommand": {
+    "body": "runCommand \"bat-themes\" { nativeBuildInputs = []; } ''\n  mkdir -p \\$out/bin\n'';\n",
+    "prefix": "runcommand"
+  },
+  "strjoin": {
+    "body": "builtins.concatStringsSep \"/\" [\"usr\" \"local\" \"bin\"]\n",
+    "prefix": "strjoin"
+  },
+  "submodule": {
+    "body": "submodule {\n  options = {\n    enable$0 = mkOption {\n      type = bool;\n      default = true;\n    };\n  };\n}\n",
+    "prefix": "submodule"
+  }
+}

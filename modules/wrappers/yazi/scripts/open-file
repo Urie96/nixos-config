@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# ---------- 参数解析 ----------
+SELECT_MODE=0
+FORCE_MIME=""
+FILES=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  -s | --select)
+    SELECT_MODE=1
+    shift
+    ;;
+  -m | --mime)
+    FORCE_MIME="$2"
+    shift 2
+    ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    echo "Unknown option: $1" >&2
+    exit 2
+    ;;
+  *)
+    FILES+=("$1")
+    shift
+    ;;
+  esac
+done
+
+if [[ ${#FILES[@]} -eq 0 ]]; then
+  echo "Usage: $0 [-s|--select] [-m|--mime MIME] <file>..." >&2
+  exit 1
+fi
+
+OPEN_OPS=() # command string or func name
+
+append_option() {
+  OPEN_OPS+=("$@")
+}
+prepend_option() {
+  OPEN_OPS=("$@" "${OPEN_OPS[@]}")
+}
+
+# ---------- helpers ----------
+exist_command() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+get_mime() {
+  local file="$1"
+  if [[ -n "$FORCE_MIME" ]]; then
+    printf '%s' "$FORCE_MIME"
+    return
+  fi
+  file -bL --mime-type -- "$file"
+}
+
+nvim() {
+  local -a paths=("$@")
+  local p="${paths[0]}"
+  if [[ -d "$p" ]]; then
+    touch -m -- "$p" || true
+    cd "$p"
+    if [[ -z "${SSH_CONNECTION:-}" ]]; then
+      local nvim_window_name="VI:$(basename "$PWD")"
+      if slim-kitten @ focus-window --match "title:\"^${nvim_window_name}\$\"" &>/dev/null; then
+        exit
+      fi
+    fi
+    # slim-kitten @ kitten group_window.py Neovim
+    exec $EDITOR
+  fi
+  exec $EDITOR "${paths[@]}"
+}
+
+clipboard_to_jq() {
+  local file_path=$1
+  local tmp
+  tmp=$(mktemp -t XXX.json)
+  cb paste | jq -f "$file_path" >"$tmp"
+  keywrap --bind $"ctrl-e:become\(nvim '($tmp)')" --bind $"c:execute\(cb copy < '($tmp)')" -- fx "$tmp"
+  rm "$tmp"
+}
+
+add_audio_option() {
+  if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    append_option remote_mpv_audio
+  else
+    append_option mpv "ffplay -nodisp -autoexit"
+  fi
+}
+
+add_video_option() {
+  if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    append_option remote_mpv_video
+  else
+    append_option mpv_background ffplay
+  fi
+}
+
+mpv_background() {
+  exec mpv --no-terminal "$1" </dev/null &>/dev/null
+}
+
+remote_mpv_video() {
+  slim-kitten @ kitten remote.py mpv_video "$1"
+}
+
+# remote-audio / mpv audio via remote — best-effort fallback to mpv
+remote_mpv_audio() {
+  slim-kitten @ kitten remote.py mpv_audio "$1"
+}
+
+pdf_to_png() {
+  local pdf_file="$1"
+  local dir="${pdf_file%.pdf}"
+  dir="${dir%.PDF}" # Handle uppercase .PDF extension
+
+  # 创建同名文件夹
+  mkdir -p -- "$dir"
+
+  # 转换 PDF 为 PNG，保存在同名文件夹下
+  # 输出文件名格式为: dir/page-1.png, dir/page-2.png, ...
+  pdftoppm -png -- "$pdf_file" "$dir/page"
+}
+
+file0="${FILES[0]}"
+if [[ -d "$file0" ]]; then
+  append_option nvim
+fi
+
+mime=$(get_mime "$file0")
+case "$mime" in
+text* | */xml | *json* | *javascript | inode/x-empty)
+  append_option nvim
+  ;;
+*zip | *tar | *rar | */x-ios-app | *xar)
+  append_option extract
+  ;;
+application/octet-stream)
+  ext="${file0##*.}"
+  case "$ext" in
+  ts) append_option remote_mpv_audio ;;
+  lua | go | py | c) append_option "\$EDITOR (by ext)" "func" "editor" ;;
+  esac
+  ;;
+esac
+
+# extension-based rules
+ext="${file0##*.}"
+ext_lc="${ext,,}"
+
+case "$ext_lc" in
+pdf) append_option "pdf_to_png" ;;
+sqlite3 | sqlite | db) append_option "sqlite3 -header" ;;
+uc!) append_option "nc2mp3" ;;
+torrent) append_option "transmission-cli" ;;
+mp3 | flac | m4a | ogg | wav) "add_audio_option" ;;
+avi | av1 | flv | mkv | m4v | mov | mp4 | webm | wmv) "add_video_option" ;;
+cast) prepend_option "asciinema play" ;;
+jq) append_option "clipboard_to_jq" ;;
+zip | rar | 7z | 7zip | tar | tar.gz | tgz | tar.bz2 | tbz2 | tar.xz | txz | tar.zst | tzst | gz | bz2 | xz | zst) prepend_option "extract" ;;
+avif | bmp | gif | heic | jpeg | jpe | jpg | pgm | png | ppm | webp) append_option "kitten icat" ;;
+odt | odf | ods | odp | doc | docx | xls | xlsx | ppt | pptx) ;;
+apk) append_option "adb install -r" ;;
+ncm) append_option "ncmdump" ;;
+step) prepend_option "foxtrot" ;;
+kicad_*) prepend_option "open -a Kicad" ;;
+esac
+
+append_option "open"
+
+selected_opt=${OPEN_OPS[0]}
+
+if ((SELECT_MODE)); then
+  selected_opt="$(printf '%s\n' "${OPEN_OPS[@]}" | gum choose --header "Open with:")"
+fi
+
+echo "Opening with: $selected_opt"
+$selected_opt "${FILES[@]}"

@@ -1,0 +1,14 @@
+{
+  "if": {
+    "body": "ifeq ($1, $2)\n  $0\nendif\n",
+    "prefix": "if"
+  },
+  "ifelse": {
+    "body": "ifeq ($1, $2)\n  $3\nelse\n  $4\nendif\n",
+    "prefix": "ifelse"
+  },
+  "phony": {
+    "body": ".PHONY: $1\n$1:\n  $0\n",
+    "prefix": "phony"
+  }
+}

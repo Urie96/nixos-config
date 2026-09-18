@@ -1,0 +1,51 @@
+// Included from rules.kdl.
+window-rule {
+    match app-id="kitty"
+    open-maximized true
+}
+
+window-rule {
+    draw-border-with-background false // 不然 kitty 没有透明背景
+}
+
+// Web browsers -> "web" workspace
+window-rule {
+    match app-id=r#"^(firefox|librewolf|chromium-browser|google-chrome|org\.chromium\.Chromium)$"#
+    open-on-workspace "1:web"
+}
+
+// Terminals and editors -> "dev" workspace
+window-rule {
+    match app-id=r#"^(com\.mitchellh\.ghostty|Alacritty|foot|footclient|kitty|org\.wezfurlong\.wezterm|xterm|emacs|neovide)$"#
+    open-on-workspace "2:dev"
+}
+
+// IM / chat apps -> "im" workspace
+window-rule {
+    match app-id=r#"^(org\.telegram\.desktop|[Ss]ignal|[Ff]erdium|Element|discord|Slack|thunderbird|evolution|org\.gnome\.Fractal|im\.nheko\.Nheko)$"#
+    open-on-workspace "3:im"
+}
+
+// Firefox/LibreWolf PiP floating
+window-rule {
+    match app-id=r#"firefox$|librewolf$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+// Firefox sharing indicator floating
+window-rule {
+    match app-id=r#"firefox$|librewolf$"# title="^Firefox — Sharing Indicator$|^LibreWolf — Sharing Indicator$"
+    open-floating true
+}
+
+// OpenSSH passphrase dialog floating
+window-rule {
+    match title="^OpenSSH Authentication Passphrase request$"
+    open-floating true
+}
+
+// Rounded corners for a modern look.
+window-rule {
+    geometry-corner-radius 20
+    clip-to-geometry true
+}

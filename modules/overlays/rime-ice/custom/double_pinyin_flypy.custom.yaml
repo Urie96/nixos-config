@@ -1,0 +1,10 @@
+# 小鹤双拼（雾凇拼音）自定义补丁
+# 由 rime-cli 会话按需生成；升级配置后可原样保留。
+patch:
+  # ascii_mode 开关加 reset，新 session 固定默认中文模式（0=中，1=英文）
+  switches/@0/reset: 0
+  # 关闭拼音提示：候选词后面不再显示全拼编码（［ni hao］）
+  translator/spelling_hints: 0
+  # 清空 preedit_format：输入时 preedit 直接显示双拼编码（如 nihc），
+  # 而非转换成全拼（nǐ hǎo）
+  translator/preedit_format: []

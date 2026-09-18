@@ -1,0 +1,10 @@
+{
+  "forr": {
+    "body": "for i in (ls)\n  echo $i\nend\n",
+    "prefix": "forr"
+  },
+  "switch": {
+    "body": "switch \\$argv[1]\n    case '-*'\n    case '*'\nend\n",
+    "prefix": "switch"
+  }
+}

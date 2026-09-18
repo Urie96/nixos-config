@@ -1,0 +1,14 @@
+-- require('jdtls').start_or_attach {
+--   cmd = { 'jdtls' },
+--   root_dir = vim.fs.root(0, {
+--     -- Multi-module projects
+--     '.git',
+--     'build.gradle',
+--     'build.gradle.kts',
+--     -- Single-module projects
+--     'build.xml', -- Ant
+--     'pom.xml', -- Maven
+--     'settings.gradle', -- Gradle
+--     'settings.gradle.kts', -- Gradle
+--   }),
+-- }

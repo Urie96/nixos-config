@@ -1,0 +1,50 @@
+{
+  "check-impl": {
+    "body": "fn implthis<T: ${1:Sync}>(_: T) {}\nimplthis($2);\n",
+    "prefix": "check-impl"
+  },
+  "derive": {
+    "body": "#[derive(${1:Default})]",
+    "prefix": "derive"
+  },
+  "fn": {
+    "body": "fn ${1:name}(${2:arg}) -> ${3:Self} {\n  ${4:todo!();}\n}\n",
+    "prefix": "fn"
+  },
+  "forr": {
+    "body": "for ${1:pat} in ${2:expr} {\n  ${3:todo!();}\n}\n",
+    "prefix": "forr"
+  },
+  "if": {
+    "body": "if $1 {\n  $2\n}\"\n",
+    "prefix": "if"
+  },
+  "iflet": {
+    "body": "if let ${1:Some(pat)} = ${2:expr} {\n  ${0:todo!();}\n}\n",
+    "prefix": "iflet"
+  },
+  "impl": {
+    "body": "impl $1 {\n\n}\n",
+    "prefix": "impl"
+  },
+  "main": {
+    "body": "fn main() {\n  ${1:todo!();}\n}\n",
+    "prefix": "main"
+  },
+  "print": {
+    "body": "println!(\"{:?}\", $1);",
+    "prefix": "print"
+  },
+  "struct": {
+    "body": "#[derive(Debug)]\nstruct ${1:Name} $0\n",
+    "prefix": "struct"
+  },
+  "while": {
+    "body": "while ${1:condition} {\n  ${2:todo!();}\n}\n",
+    "prefix": "while"
+  },
+  "whilelet": {
+    "body": "while let ${1:Some(pat)} = ${2:expr} {\n  ${0:todo!();}\n}\n",
+    "prefix": "whilelet"
+  }
+}

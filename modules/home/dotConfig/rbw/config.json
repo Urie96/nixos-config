@@ -1,0 +1,12 @@
+{
+  "email": "lubui.com@gmail.com",
+  "sso_id": null,
+  "base_url": "https://pw.lubui.com:8443",
+  "identity_url": null,
+  "ui_url": null,
+  "notifications_url": null,
+  "lock_timeout": 999999999,
+  "sync_interval": 3600,
+  "pinentry": "pinentry",
+  "client_cert_path": null
+}

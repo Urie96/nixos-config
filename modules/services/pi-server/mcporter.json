@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "home-assistant": {
+      "baseUrl": "http://localhost:8123/api/mcp",
+      "headers": {
+        "Authorization": "$env:HOME_ASSISTANT_AUTH"
+      }
+    }
+  }
+}

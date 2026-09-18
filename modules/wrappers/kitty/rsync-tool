@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# 由 ./default.nix 用 writeShellApplication 打包（runtimeInputs 提供 rsync/ssh/yazi），
+# 那里会去掉下面这行 shebang 并自己生成一份；这里的 shebang 只是给编辑器看的。
+set -euo pipefail
+
+function wait_confirm {
+  # shellcheck disable=2162
+  read -p $'HAS ERROR!\nPress any key to exit... \n' -n1 -s
+}
+
+trap wait_confirm ERR
+
+PORT=""
+HOST=""
+FILES=()
+ACTION=""
+
+die() {
+  builtin echo "$*" >&2
+  exit 1
+}
+
+parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+    --action)
+      shift
+      ACTION="$1"
+      ;;
+    --port)
+      shift
+      PORT="$1"
+      ;;
+    --host)
+      shift
+      HOST="$1"
+      ;;
+    --)
+      shift
+      FILES=("$@")
+      break
+      ;;
+    *)
+      die "unknown arg: '$1'"
+      ;;
+    esac
+    shift
+  done
+}
+
+select_local_dir() {
+  local dir
+  dir="$(yazi --chooser-file /dev/stdout)"
+  if [ -z "$dir" ]; then
+    die "no dir selected"
+  fi
+  if [ -f "$dir" ]; then
+    dir="${dir%/*}"
+  fi
+  echo "$dir"
+}
+
+reveal() {
+  if [ -n "${YAZI_ID:-}" ]; then
+    ya emit reveal "$1"
+  else
+    yazi "$1"
+    # fish -i -C "r '$1'"
+  fi
+}
+
+reveal_remote() {
+  # ssh "fish -i -C 'r \"$1\"'"
+  ssh "yazi '$1'"
+}
+
+rsync() {
+  local rsync_ssh=()
+  if [ -n "$PORT" ]; then
+    rsync_ssh+=("-e")
+    rsync_ssh+=("ssh -p $PORT")
+  fi
+  command rsync --verbose --human-readable --progress --recursive --partial --exclude=.git "${rsync_ssh[@]}" "$@"
+}
+
+ssh() {
+  local ssh_port=""
+  if [ -n "$PORT" ]; then
+    ssh_port="-p $PORT"
+  fi
+  # shellcheck disable=2086
+  command ssh -t $ssh_port "$HOST" "$@"
+}
+
+pull() {
+  if [[ "$#" -lt 2 ]]; then
+    die "pull need at least 2 args, but got $#"
+  fi
+  local rsync_src=("${HOST}:$1")
+  shift
+  while [ "$#" -gt 1 ]; do
+    rsync_src+=(":$1")
+    shift
+  done
+  local local_dst="$1"
+  rsync "${rsync_src[@]}" "${local_dst}"
+}
+
+push() {
+  if [[ "$#" -lt 2 ]]; then
+    die "push need at least 2 args, but got $#"
+  fi
+  local local_src=()
+  while [ "$#" -gt 1 ]; do
+    local_src+=("$1")
+    shift
+  done
+
+  local remote_dst="${HOST}:$1"
+
+  if [[ "${local_src[0]}" == /* ]]; then
+    rsync "${local_src[@]}" "$remote_dst"
+  else
+    rsync --relative "${local_src[@]}" "$remote_dst"
+  fi
+}
+
+main() {
+  case "$ACTION" in
+  pull)
+    local local_dir
+    local_dir="$(select_local_dir "Select which local directory to save remote files")"
+    pull "${FILES[@]}" "$local_dir"
+    local first="${FILES[0]}"
+    reveal "${local_dir}/${first##*/}"
+    ;;
+  push)
+    if [ ${#FILES[@]} -ne 1 ]; then
+      die "remote dir count is ${#FILES[@]}, must be 1"
+    fi
+    local remote_dir="${FILES[0]}"
+    if IFS=$'\n' read -d '' -r -a local_files; then :; fi < <(multi_select_local_files "Select local files to upload")
+    push "${local_files[@]}" "${remote_dir}"
+    local first=${local_files[0]}
+    # reveal_remote "${remote_dir}/${first##*/}"
+    ;;
+  *)
+    echo default
+    ;;
+  esac
+}
+
+parse_args "$@"
+main
