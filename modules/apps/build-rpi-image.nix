@@ -20,6 +20,6 @@
       };
     in
     {
-      packages.build-rpi4-image = rpi-base.config.system.build.sdImage;
+      packages.build-rpi-image = rpi-base.config.system.build.sdImage;
     };
 }
