@@ -20,16 +20,14 @@
             src = pkgs.fetchFromGitHub {
               owner = "mfussenegger";
               repo = "nvim-dap";
-              rev = "9e848e09a697ee95302a3ef2dd43fd6eb709e570";
-              hash = "sha256-IHm3CwO7qUTtOZqhljDjSzz4WbaAJ4kPY384MyZZ9ac=";
+              inherit (old.src) rev hash;
             };
           });
           nvim-lint = super.nvim-lint.overrideAttrs (old: {
             src = pkgs.fetchFromGitHub {
               owner = "mfussenegger";
               repo = "nvim-lint";
-              rev = "3d55c8f67c6ae5c15e1042571e107c7a3d5c5f4e";
-              hash = "sha256-IcV2QgxhGpTs7xTzLMOrqGuFdAaSuC96HQ3cu8+fTFY=";
+              inherit (old.src) rev hash;
             };
           });
         }
