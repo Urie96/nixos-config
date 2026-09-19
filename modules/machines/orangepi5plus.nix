@@ -16,6 +16,10 @@
 
       my.mainUser.name = "urie";
 
+      networking.useNetworkd = true;
+      networking.wireless.enable = false;
+      networking.wireless.iwd.enable = true;
+
       virtualisation.waydroid.enable = true;
 
       networking.interfaces.enP3p49s0.useDHCP = true;

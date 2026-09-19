@@ -28,6 +28,8 @@ Config.later(function()
     mappings = {
       goto_left = 'jj',
       goto_right = 'll',
+      around_last = 'aL',
+      inside_last = 'iL',
     },
   }
 end)

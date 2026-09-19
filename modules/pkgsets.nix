@@ -183,6 +183,7 @@ let
       khal
       # Contacts
       khard
+      mpv
     ];
 
   # full = 下面所有包集的并集，顺序与上面定义一致。

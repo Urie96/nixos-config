@@ -1,3 +1,4 @@
+{ self, ... }:
 {
   flake.wrappers.kitty =
     {
@@ -15,7 +16,7 @@
         runtimeInputs = [
           pkgs.rsync
           pkgs.openssh
-          pkgs.yazi
+          self.packages.${pkgs.stdenv.hostPlatform.system}.yazi
         ];
         text = lib.removePrefix "#!/usr/bin/env bash\n" (builtins.readFile ./rsync-tool);
       };
