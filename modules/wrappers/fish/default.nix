@@ -30,7 +30,7 @@
       flags."--no-config" = false;
 
       shellInit = ''
-        set -gx FZF_DEFAULT_OPTS_FILE ~/.fzfrc
+        set -gx FZF_DEFAULT_OPTS_FILE ${./fzfrc}
 
         set -gx HF_ENDPOINT 'https://hf-mirror.com'
         set -gx LANG 'zh_CN.UTF-8'
