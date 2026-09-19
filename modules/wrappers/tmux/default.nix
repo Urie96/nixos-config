@@ -8,7 +8,7 @@
     }:
     {
       imports = [ wlib.wrapperModules.tmux ];
-      terminal = "screen-256color";
+      terminal = "tmux-256color";
       plugins = [
         {
           plugin = pkgs.tmuxPlugins.catppuccin;

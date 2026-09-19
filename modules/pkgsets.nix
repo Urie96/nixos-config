@@ -48,11 +48,8 @@ let
       sqlite
       procps
 
-      atuin
       bat
       delta
-      gum
-      openssh
 
       pv
       just
@@ -69,7 +66,6 @@ let
       findutils
       coreutils
       gnused
-      yq-go
       gnugrep
       jq
       fx
@@ -179,6 +175,7 @@ let
       self'.packages.todoman
       nur.lazydeck
 
+      yq-go
       msmtp
       notmuch
       isync

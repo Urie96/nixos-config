@@ -18,7 +18,6 @@
         self.inputs.srvos.nixosModules.mixins-trusted-nix-caches
       ];
 
-      nixpkgs.pkgs = partsArgs.pkgs;
       _module.args = { inherit (partsArgs) self' inputs'; };
 
       boot.kernel = {

@@ -21,7 +21,6 @@
           self.inputs.system-manager.lib.makeSystemConfig {
             modules = [
               {
-                _module.args.pkgs = lib.mkForce pkgs;
                 nixpkgs.hostPlatform = system;
               }
             ]
@@ -41,7 +40,6 @@
             modules ? [ ],
           }:
           self.inputs.nix-on-droid.lib.nixOnDroidConfiguration {
-            inherit pkgs;
             modules = modules;
             extraSpecialArgs = {
               inherit

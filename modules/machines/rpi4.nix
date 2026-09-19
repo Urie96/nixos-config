@@ -1,7 +1,7 @@
 {
   clan.inventory.machines.rpi4.deploy = {
     targetHost = "root@192.168.2.7";
-    buildHost = "urie@home.lubui.com";
+    buildHost = "urie@orangepi5plus.lan";
   };
 
   clan.machines.rpi4 =
@@ -14,7 +14,7 @@
     {
       imports = [
         self.inputs.nixos-hardware.nixosModules.raspberry-pi-4
-        self.nixosModules.common
+        self.nixosModules.base
       ];
 
       clan.core.deployment.requireExplicitUpdate = true;
@@ -26,6 +26,6 @@
       # Enables the generation of /boot/extlinux/extlinux.conf
       boot.loader.generic-extlinux-compatible.enable = true;
 
-      system.stateVersion = "25.11";
+      system.stateVersion = "26.11";
     };
 }

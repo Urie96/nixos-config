@@ -142,12 +142,6 @@
           };
           overlays = [ self.overlays.rime-ice ];
         };
-
-        wrappers.control_type = "exclude"; # | "build" (default: "exclude")
-        wrappers.packages = {
-          sops = true; # <- set to true to exclude from being built into `packages.*.*` flake output
-        };
       };
-
     };
 }

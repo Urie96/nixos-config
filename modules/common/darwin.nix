@@ -20,7 +20,6 @@
         self.inputs.srvos.darwinModules.mixins-nix-experimental
       ];
 
-      nixpkgs.pkgs = partsArgs.pkgs;
       _module.args = { inherit (partsArgs) self' inputs'; };
 
       documentation.enable = false;

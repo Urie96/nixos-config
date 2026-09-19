@@ -1,4 +1,8 @@
 { inputs, ... }: {
+  perSystem = { system, ... }: {
+    wrappers.packages.sops = true; # <- set to true to exclude from being built into `packages.*.*` flake output
+  };
+
   flake.wrappers.sops =
     {
       config,
