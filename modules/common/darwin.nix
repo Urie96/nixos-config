@@ -68,6 +68,9 @@
               # run as user
               sudo -u ${config.system.primaryUser} ${user-extra}
 
+              # reduce motion (may fail without Accessibility TCC permission)
+              defaults write com.apple.universalaccess reduceMotion -bool true 2>/dev/null || true
+
               # disable spotlight
               launchctl unload -w /System/Library/LaunchDaemons/com.apple.metadata.mds.plist >/dev/null 2>&1 || true
               # disable fseventsd on /nix volume
@@ -78,7 +81,9 @@
       };
 
       system.defaults = {
-        universalaccess.reduceMotion = true; # 减少动画
+        # universalaccess.reduceMotion 已移至 extraActivation 中处理，
+        # 因为 macOS 会阻止 launchctl asuser 写入 com.apple.universalaccess 域。
+        universalaccess.reduceMotion = null;
         NSGlobalDomain = {
           "com.apple.swipescrolldirection" = pkgs.lib.mkDefault false; # enable natural scrolling(default to true)
           "com.apple.sound.beep.feedback" = 0; # disable beep sound when pressing volume up/down key

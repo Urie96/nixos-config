@@ -162,11 +162,13 @@
       settings = {
         active_tab_title_template = "{fmt.fg._e5c07b}{fmt.bg.default}{fmt.bg._e5c07b}{fmt.fg._7b8fe5}{str(num_windows)+' ' if num_windows>1 else ''}{fmt.fg._282c34}{bell_symbol}{title.split(' ')[0]}{fmt.fg._e5c07b}{fmt.bg.default} ";
         tab_title_template = "{fmt.fg._5c6370}{fmt.bg.default}{fmt.bg._5c6370}{fmt.fg._d7d3cb}{str(num_windows)+' ' if num_windows>1 else ''}{fmt.fg._abb2bf}{bell_symbol}{title.split(' ')[0]}{fmt.fg._5c6370}{fmt.bg.default} ";
+        tab_bar_background = "#1E1E2E";
+        inactive_tab_background = "#1E1E2E";
         tab_bar_edge = "top";
         tab_bar_margin_height = "9 0";
         tab_bar_margin_width = 9;
         tab_bar_style = "separator";
-        tab_separator = "";
+        tab_separator = ''" "'';
         tab_bar_min_tabs = 2;
         cursor_shape = "block";
         url_style = "dotted";
