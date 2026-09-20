@@ -170,6 +170,7 @@ let
     [
       self'.packages.rclone
       self'.packages.himalaya
+      self'.packages.mbsync
       self'.packages.notmuch
       self'.packages.mitmproxy
       self'.packages.vdirsyncer
@@ -178,7 +179,6 @@ let
 
       yq-go
       msmtp
-      isync
       # Calendar tools
       khal
       # Contacts
