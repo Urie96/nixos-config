@@ -133,29 +133,43 @@ deck.config {
     {
       'urie96/notmuch.lazydeck',
       config = function()
+        -- 账号和 mailbox 都用 maildir 目录区分，不依赖 notmuch hook 打的 tag。
+        -- mbsync 把每个账号同步到 ~/mail/<账号>/，notmuch 的 database.path 也是 ~/mail，
+        -- 所以下面的 path: / folder: 都是相对 ~/mail 的：
+        --   query       = 账号全部邮件
+        --   inbox_query = 账号的 Inbox（mbsync 的 `Inbox ~/mail/<账号>/`，即顶层 cur/new）
+        --   sent_query  = 账号的已发送目录（Maildir++ 会在服务端文件夹名前加点）
         require('notmuch').setup {
           accounts = {
             {
               name = 'all',
               label = 'All',
               query = '*',
+              inbox_query = '(folder:qq or folder:ustc or folder:gmail) and not tag:deleted',
+              sent_query = 'tag:sent or folder:qq/.Sent Messages or folder:qq/.QQ-Sent or folder:ustc/.Sent Items or folder:gmail/.[Gmail].已发邮件',
             },
             {
               name = 'qq',
               label = 'QQ',
-              query = 'tag:account-qq',
+              query = 'path:qq/**',
+              inbox_query = '(folder:qq) and not tag:deleted',
+              sent_query = '(folder:qq/.Sent Messages or folder:qq/.QQ-Sent)',
               msmtp_account = 'qq',
             },
             {
               name = 'ustc',
               label = 'USTC',
-              query = 'tag:account-ustc',
+              query = 'path:ustc/**',
+              inbox_query = '(folder:ustc) and not tag:deleted',
+              sent_query = '(folder:ustc/.Sent Items)',
               msmtp_account = 'ustc',
             },
             {
               name = 'gmail',
               label = 'Gmail',
-              query = 'tag:account-gmail',
+              query = 'path:gmail/**',
+              inbox_query = '(folder:gmail) and not tag:deleted',
+              sent_query = '(folder:gmail/.[Gmail].已发邮件)',
               msmtp_account = 'gmail',
             },
           },

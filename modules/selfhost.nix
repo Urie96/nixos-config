@@ -21,6 +21,7 @@
       stash
       snapserver
       netease-cloud-music-api
+      apple-music-api
       esphome
       translate-server
       ddns-go
