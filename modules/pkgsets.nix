@@ -170,6 +170,7 @@ let
     [
       self'.packages.rclone
       self'.packages.himalaya
+      self'.packages.notmuch
       self'.packages.mitmproxy
       self'.packages.vdirsyncer
       self'.packages.todoman
@@ -177,7 +178,6 @@ let
 
       yq-go
       msmtp
-      notmuch
       isync
       # Calendar tools
       khal
