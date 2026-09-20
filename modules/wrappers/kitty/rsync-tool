@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# 由 ./default.nix 用 writeShellApplication 打包（runtimeInputs 提供 rsync/ssh/yazi），
-# 那里会去掉下面这行 shebang 并自己生成一份；这里的 shebang 只是给编辑器看的。
 set -euo pipefail
 
 function wait_confirm {
@@ -139,7 +137,7 @@ main() {
       die "remote dir count is ${#FILES[@]}, must be 1"
     fi
     local remote_dir="${FILES[0]}"
-    if IFS=$'\n' read -d '' -r -a local_files; then :; fi < <(multi_select_local_files "Select local files to upload")
+    if IFS=$'\n' read -d '' -r -a local_files; then :; fi < <(yazi --chooser-file /dev/stdout)
     push "${local_files[@]}" "${remote_dir}"
     local first=${local_files[0]}
     # reveal_remote "${remote_dir}/${first##*/}"
