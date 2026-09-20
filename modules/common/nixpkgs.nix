@@ -14,6 +14,5 @@ in
 {
   flake.nixosModules.common = common;
   flake.darwinModules.common = common;
-  flake.sysModules.common = common;
   flake.droidModules.common = common;
 }
