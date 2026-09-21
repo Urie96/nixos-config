@@ -110,7 +110,7 @@
                     adb install -r "$1"
                     shift
                 done
-              ''} $s1";
+              ''} %s1";
               desc = "Install apk via ADB";
               block = true;
             }
@@ -134,7 +134,7 @@
                   "$INPUT"
 
                 apksigner verify --verbose --print-certs "$OUTPUT"
-              ''} $s1";
+              ''} %s1";
               desc = "Sign .apk";
               block = true;
             }
