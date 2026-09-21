@@ -1,4 +1,5 @@
 {
+  # https://nix-community.github.io/nix-on-droid/nix-on-droid-options.html
   flake.droidModules.common =
     {
       self',
@@ -10,6 +11,9 @@
     {
       environment.sessionVariables = {
         SHELL = config.user.shell;
+        EDITOR = "nvim";
+        MANPAGER = "nvim +Man!";
+        HF_ENDPOINT = "https://hf-mirror.com";
       };
 
       # runit service management (experimental, from nix-on-droid PR #540)

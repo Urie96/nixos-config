@@ -53,7 +53,7 @@
         if test -f $wrapped_fish_load_secrets
             source $wrapped_fish_load_secrets
         else
-            refreshSecrets
+            refresh-secrets
         end
       '';
 
@@ -66,7 +66,7 @@
             end
 
             if command -q devenv
-                devenv hook fish | sed 's/_DEVENV_SHELL_HINT=fish devenv shell/_DEVENV_SHELL_HINT=fish devenv shell --no-tui --no-reload/' | source
+                source ${./devenv.fish}
             end
 
             fish_config theme choose catppuccin-mocha --color-theme=dark
@@ -82,7 +82,7 @@
           }
         ) functionFiles)
         // {
-          refreshSecrets = {
+          refresh-secrets = {
             modifiers.description = "重新解密 sops secrets 并生成 load-secrets.fish 缓存";
             body = ''
               set -l runtime_dir /tmp
@@ -93,33 +93,33 @@
               set -l out_file $out_dir/load-secrets.fish
 
               if not command mkdir -p $out_dir
-                  echo "refreshSecrets: 无法创建目录 $out_dir" >&2
+                  echo "refresh-secrets: 无法创建目录 $out_dir" >&2
                   return 1
               end
 
               # 先写临时文件，成功后再原子替换，避免解密失败留下不完整的缓存。
               set -l tmp_file (command mktemp $out_dir/load-secrets.XXXXXX)
               if test -z "$tmp_file"
-                  echo "refreshSecrets: 无法在 $out_dir 创建临时文件" >&2
+                  echo "refresh-secrets: 无法在 $out_dir 创建临时文件" >&2
                   return 1
               end
 
               set -l secrets_json (${lib.getExe pkgs.sops} decrypt --output-type json ${./secrets.yaml})
               or begin
-                  echo "refreshSecrets: sops 解密失败，保留旧的 $out_file" >&2
+                  echo "refresh-secrets: sops 解密失败，保留旧的 $out_file" >&2
                   command rm -f $tmp_file
                   return 1
               end
 
               if not printf '%s\n' $secrets_json | ${lib.getExe pkgs.jq} -r 'to_entries[] | "set -gx \(.key) \(.value | @sh)"' > $tmp_file
-                  echo "refreshSecrets: 生成 fish 代码失败，保留旧的 $out_file" >&2
+                  echo "refresh-secrets: 生成 fish 代码失败，保留旧的 $out_file" >&2
                   command rm -f $tmp_file
                   return 1
               end
 
               command chmod 600 $tmp_file
               command mv -f $tmp_file $out_file
-              echo "refreshSecrets: 已更新 $out_file"
+              echo "refresh-secrets: 已更新 $out_file"
 
               source $out_file
             '';

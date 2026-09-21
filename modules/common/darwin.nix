@@ -1,5 +1,6 @@
 { withSystem, ... }:
 {
+  # https://nix-darwin.github.io/nix-darwin/manual/
   flake.darwinModules.common =
     {
       self,
@@ -26,6 +27,13 @@
       documentation.info.enable = false;
       documentation.doc.enable = false;
       documentation.man.enable = false;
+
+      environment.variables = {
+        EDITOR = "nvim";
+        MANPAGER = "nvim +Man!";
+        LANG = "zh_CN.UTF-8";
+        HF_ENDPOINT = "https://hf-mirror.com";
+      };
 
       security.pki.certificateFiles = [ "${self}/assets/mitmproxy-ca-cert.pem" ];
 

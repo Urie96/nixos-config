@@ -1,5 +1,6 @@
 { withSystem, ... }:
 {
+  # https://search.nixos.org/options?channel=unstable
   flake.nixosModules.common =
     {
       config,
@@ -24,6 +25,12 @@
         sysctl = {
           "net.ipv4.conf.all.forwarding" = true;
         };
+      };
+
+      environment.variables = {
+        EDITOR = "nvim";
+        MANPAGER = "nvim +Man!";
+        HF_ENDPOINT = "https://hf-mirror.com";
       };
 
       documentation = {

@@ -6,6 +6,7 @@ local function kitty_open_url(url)
     payload = { action = 'open_url ' .. url },
     no_response = true,
   }
+  vim.notify('Opening ' .. url, vim.log.levels.INFO)
   local tty_string = '\x1bP@kitty-cmd' .. kitty_cmd_string .. '\x1b\\'
   vim.fn.chansend(vim.v.stderr, tty_string)
 end

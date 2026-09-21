@@ -1,4 +1,5 @@
 {
+  # https://system-manager.net/main/reference/all-options/
   flake.sysModules.common = {
     nix.enable = true;
 
@@ -8,6 +9,12 @@
       useGlobalPkgs = true;
       useUserPackages = true;
       backupFileExtension = "bakeup";
+    };
+
+    environment.variables = {
+      EDITOR = "nvim";
+      MANPAGER = "nvim +Man!";
+      HF_ENDPOINT = "https://hf-mirror.com";
     };
 
     # Enable and configure services
