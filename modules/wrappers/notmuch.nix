@@ -1,12 +1,11 @@
 {
   flake.wrappers.notmuch =
-    { wlib, ... }:
+    { wlib, pkgs, ... }:
     {
       imports = [ wlib.wrapperModules.notmuch ];
 
-      # 内容对照 ~/.config/notmuch/default/config。
-      # 相对路径由 notmuch 按 $HOME 展开，所以 "mail" == ~/mail
-      # （macOS 大小写不敏感，等价于 ~/Mail）。
+      package = pkgs.notmuch.override { withEmacs = false; };
+
       settings = {
         database = {
           path = "mail";

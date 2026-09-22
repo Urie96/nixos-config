@@ -278,6 +278,9 @@ in
         ++ (with inputs'.nur-packages.packages; [
           mac-ocr
           cliclick
+
+          tinycast
+          arc
         ])
         ++ (with self'.packages; [
           kitty

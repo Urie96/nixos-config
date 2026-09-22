@@ -14,15 +14,18 @@
 
       system.primaryUser = "urie";
 
-      environment.systemPackages = [
+      environment.systemPackages = ([
         inputs'.clan-core.packages.default
-      ];
+      ])
+      ++ (with inputs'.nur-packages.packages; [
+        telegram
+        wechat
+      ]);
 
       clan.core.networking.targetHost = "root@192.168.2.2";
 
       homebrew.casks = [
-        "telegram"
-        "wechat"
+        "calibre"
         "neteasemusic"
       ];
       system.stateVersion = 5;
