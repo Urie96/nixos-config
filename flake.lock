@@ -646,11 +646,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1789901193,
-        "narHash": "sha256-O6+HUQD8vLBz526n0+5L7+yNkC2Vs6hi2jvQhwbfK/g=",
+        "lastModified": 1790057511,
+        "narHash": "sha256-KoSQNgssuyMbRYjvIMCuTyXzeEDInDymlM+NhZNc9HA=",
         "owner": "Urie96",
         "repo": "nur-packages",
-        "rev": "0e4b0b26d60c77bb482414afce379287686802f3",
+        "rev": "ac82ea7050a9cd681d0898100ae9f4682214d04a",
         "type": "github"
       },
       "original": {

@@ -20,10 +20,10 @@
         ];
         text = lib.removePrefix "#!/usr/bin/env bash\n" (builtins.readFile ./rsync-tool);
       };
+      nur = self.inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system};
     in
     {
-      # 内置 kitty wrapper 的扩展（$out/kittyConfig 目录、KITTY_CONFIG_DIRECTORY、
-      # clear_all_shortcuts、open-actions.conf/quick-access-terminal.conf/*.py）见 ./module.nix
+      package = nur.kitty;
       themeFile = "Catppuccin-Mocha";
       font.name = "Maple Mono NF CN";
       font.size = 15;
@@ -175,6 +175,7 @@
         enabled_layouts = "grid,stack";
         window_padding_width = 0;
         show_hyperlink_targets = true;
+        custom_shaders = "cursor-trail-lightning";
         cursor_trail = 3;
         cursor_trail_decay = "0.1 0.4";
         cursor_trail_start_threshold = 5;
