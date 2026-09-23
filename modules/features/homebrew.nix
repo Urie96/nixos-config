@@ -26,9 +26,6 @@
         enable = true;
         # taps = builtins.attrNames config.nix-homebrew.taps;
         casks = [
-          # "kitty"
-          "raycast"
-          "arc"
           # "squirrel-app"
         ];
         caskArgs.language = "zh-CN";

@@ -6,7 +6,7 @@
   };
 
   clan.machines.mac-mini =
-    { inputs', ... }:
+    { inputs', pkgs, ... }:
     {
       imports = with self.darwinModules; [
         full
@@ -20,13 +20,16 @@
       ++ (with inputs'.nur-packages.packages; [
         telegram
         wechat
+        bambu-studio
+        feishu
+        balenaetcher
+        neteasemusic
       ]);
 
       clan.core.networking.targetHost = "root@192.168.2.2";
 
       homebrew.casks = [
         "calibre"
-        "neteasemusic"
       ];
       system.stateVersion = 5;
 
