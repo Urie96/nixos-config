@@ -28,7 +28,7 @@
       };
 
       environment.variables = {
-        EDITOR = "nvim";
+        EDITOR = lib.mkForce "nvim";
         MANPAGER = "nvim +Man!";
         HF_ENDPOINT = "https://hf-mirror.com";
       };
@@ -61,7 +61,7 @@
       };
 
       security.sudo.wheelNeedsPassword = false; # sudo without password
-      programs.command-not-found.enable = false;
+      # programs.command-not-found.enable = false;
 
       i18n.defaultLocale = "zh_CN.UTF-8";
       i18n.supportedLocales = [
