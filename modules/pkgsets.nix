@@ -270,7 +270,9 @@ in
           sqlite
           # ncmdump
           qrencode
-          clipboard-jh
+          # clipboard-jh 0.10+ 在 macOS 上用 Cocoa/ARC 编译（-fobjc-arc），但 nixpkgs 默认
+          # 用 gcc15Stdenv 构建，g++ 不支持该选项导致编译失败。覆盖为 clangStdenv 恢复可用。
+          (clipboard-jh.override { gcc15Stdenv = pkgs.clangStdenv; })
           netcat-gnu # openbsd mac 不可用
           android-tools
           scrcpy

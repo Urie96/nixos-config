@@ -20,6 +20,10 @@
         WORK = "1";
       };
 
+      environment.systemPackages = with inputs'.nur-packages.packages; [
+        feishu
+      ];
+
       # `clan machines update` 不带机器名时跳过它，
       clan.core.deployment.requireExplicitUpdate = true;
 

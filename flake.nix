@@ -14,7 +14,7 @@
   ];
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst";
     # old-nixpkgs.url = "github:NixOS/nixpkgs/b3c092d3c36d91e2f61f3dfb39a159f180a56659";
 
     nix-on-droid.url = "github:Urie96/nix-on-droid/testing";

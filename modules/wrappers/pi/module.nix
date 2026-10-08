@@ -104,10 +104,6 @@
               ln -sfn ${config.generatedConfig.placeholder}/skills "$PI_CODING_AGENT_DIR/skills"
             ''
           ];
-
-          flags = {
-            "--tui-mode" = "fullscreen";
-          };
         };
     };
 }

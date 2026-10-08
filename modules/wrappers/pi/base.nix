@@ -17,7 +17,6 @@
       themeFile = ./themes/catppuccin-mocha.json;
 
       settings = {
-        # lastChangelogVersion = "0.84.3";
         packages = [
           "${./extensions/notify.ts}"
           "${./extensions/coding-agent-status.ts}"
