@@ -1,3 +1,4 @@
+{ self, ... }:
 {
   flake.nixosModules.harmonia =
     { config, pkgs, ... }:
@@ -28,5 +29,27 @@
           proxyWebsockets = true;
         };
       };
+    };
+
+  flake.sysModules.harmonia =
+    let
+      harmoniaModulePath = "${self.inputs.nixpkgs.outPath}/nixos/modules/services/networking/harmonia.nix";
+      secret = "/var/lib/harmonia/harmonia.secret";
+    in
+    {
+      imports = [ harmoniaModulePath ];
+
+      services.harmonia.cache = {
+        enable = true;
+        signKeyPaths = [ secret ];
+        settings.priority = 30;
+      };
+
+      # 私钥生成命令（生成后保留 pub，删除 secret 前记得备份）：
+      #   sudo mkdir -p -m 0700 /var/lib/harmonia
+      #   sudo nix-store --generate-binary-cache-key devbox-1 \
+      #     /var/lib/harmonia/harmonia.secret /var/lib/harmonia/harmonia.pub
+      # devbox 当前实际安装的公钥（其他机器拉取此缓存时信任它）：
+      #   devbox-1:EHo6uXsF6SnbTmjmnB4CWua3VGrLeaI5PFVBPwkWPAE=
     };
 }
