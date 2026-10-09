@@ -33,6 +33,7 @@
     imports = with self.sysModules; [
       home
       common
+      nix-daemon
       user
       fish
       basePkgs

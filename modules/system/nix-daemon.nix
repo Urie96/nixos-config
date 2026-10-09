@@ -84,4 +84,23 @@ in
 
     nix.registry.nixpkgs.flake = self.inputs.nixpkgs;
   };
+
+  flake.sysModules.nix-daemon =
+    {
+      config,
+      lib,
+      ...
+    }:
+    {
+      imports = [ nixCommon ];
+
+      nix = {
+        enable = lib.mkDefault true;
+
+        settings.trusted-users = [
+          config.my.mainUser.name
+          "root"
+        ];
+      };
+    };
 }
