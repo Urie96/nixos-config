@@ -10,7 +10,6 @@
         settings.server = {
           DISABLE_ROUTER_LOG = true;
           ROOT_URL = "https://git.lubui.com:8443";
-          DOMAIN = "lubui.com";
           PROTOCOL = "http+unix";
           DISABLE_SSH = true;
         };
