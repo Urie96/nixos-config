@@ -41,6 +41,9 @@
             modules ? [ ],
           }:
           self.inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+            # nix-on-droid 的 flake 模式不接受 nixpkgs.config/overlays,
+            # 必须把配置好的 pkgs 作为函数参数传进来。
+            inherit pkgs;
             modules = modules;
             extraSpecialArgs = {
               inherit
