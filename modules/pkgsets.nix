@@ -29,7 +29,6 @@ let
       lazydeck
     ])
     ++ (with pkgs; [
-      binutils
       nmap
       which
       gzip

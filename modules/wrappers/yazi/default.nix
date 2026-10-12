@@ -143,8 +143,8 @@
             {
               run = "${pkgs.writeShellScript "pdf_to_png" ''
                 while [[ $# -gt 0 ]]; do
-                    local pdf_file="$1"
-                    local dir="''${pdf_file%.pdf}"
+                    pdf_file="$1"
+                    dir="''${pdf_file%.pdf}"
                     dir="''${dir%.PDF}" # Handle uppercase .PDF extension
                     mkdir -p -- "$dir"
                     # 输出文件名格式为: dir/page-1.png, dir/page-2.png, ...
