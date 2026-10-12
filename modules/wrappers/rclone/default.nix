@@ -61,6 +61,18 @@
           sha1sum_command = "sha1sum";
         };
 
+        # Switch 上的 sys-ftpd：匿名登录、密码为空。
+        # rclone 的 ftp backend 会无条件执行 obscure.Reveal(pass)，
+        # pass 为空时会直接报 "input too short when revealing password"，
+        # 所以这里必须放一个（已 obscure 的）占位密码。
+        switch_ftp = {
+          type = "ftp";
+          host = "192.168.2.119";
+          port = "5000";
+          user = "anonymous";
+          pass = "_uLeSsnqBXR3JZVoELU9BcuKBcJ7"; # rclone obscure dummy
+        };
+
         nextcloud = {
           type = "webdav";
           url = "https://cloud.lubui.com:8443/nextcloud/remote.php/dav/files/urie/";
