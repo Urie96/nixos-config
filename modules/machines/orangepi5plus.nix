@@ -15,6 +15,7 @@
       ];
 
       my.mainUser.name = "urie";
+      my.homeNetwork = true;
 
       networking.useNetworkd = true;
       networking.wireless.enable = false;

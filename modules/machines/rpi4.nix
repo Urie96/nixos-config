@@ -19,6 +19,7 @@
       clan.core.deployment.requireExplicitUpdate = true;
 
       my.mainUser.name = "urie";
+      my.homeNetwork = true;
 
       networking.useNetworkd = true;
       networking.wireless.enable = false;

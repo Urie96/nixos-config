@@ -9,6 +9,15 @@ let
           description = "The username of the primary user for this system.";
         };
       };
+
+      my.homeNetwork = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Whether this machine sits on the home network. When true, hosts on
+          the home LAN are reachable directly, so no SSH jump host is needed.
+        '';
+      };
     };
   };
 in

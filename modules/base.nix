@@ -43,6 +43,7 @@
   flake.droidModules.base = {
     imports = with self.droidModules; [
       common
+      fish
       nix-daemon
       home
       font

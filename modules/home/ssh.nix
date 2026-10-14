@@ -1,57 +1,75 @@
 {
-  flake.homeModules.ssh.programs.ssh = {
-    enable = true;
-
-    # 不再使用旧版默认值，一律在 settings."*" 中显式声明
-    enableDefaultConfig = false;
-
-    settings = {
-      "home.lubui.com" = {
-        User = "urie";
-      };
-
-      "mac.mini" = {
-        User = "urie";
-      };
-
-      "orange.pi" = {
-        User = "orange.pi";
-      };
-
-      "rpi4" = {
-        User = "urie";
-        HostName = "raspberrypi.lan";
+  flake.homeModules.ssh =
+    {
+      lib,
+      osConfig,
+      ...
+    }:
+    let
+      # 家庭局域网内的主机只有在机器本身不在家庭网络时才需要经由
+      # home.lubui.com 跳板访问。
+      proxyJump = lib.optionalAttrs (!osConfig.my.homeNetwork) {
         ProxyJump = "home.lubui.com";
       };
+    in
+    {
+      programs.ssh = {
+        enable = true;
 
-      "termux.lan" = {
-        Port = 8022;
-        User = "nix-on-droid";
-      };
+        # 不再使用旧版默认值，一律在 settings."*" 中显式声明
+        enableDefaultConfig = false;
 
-      "kindle.lan" = {
-        Port = 2222;
-        User = "root";
-      };
+        settings = {
+          "home.lubui.com" = {
+            User = "urie";
+          };
 
-      "devbox" = {
-        User = "yangrui.0";
-        HostName = "10.37.107.28";
-      };
+          "macmini" = {
+            User = "urie";
+            HostName = "macmini.lan";
+          }
+          // proxyJump;
 
-      # 通配块由 home-manager 始终渲染在最后
-      "*" = {
-        ForwardAgent = false;
-        AddKeysToAgent = "no";
-        Compression = false;
-        ServerAliveInterval = 30;
-        ServerAliveCountMax = 2;
-        HashKnownHosts = false;
-        UserKnownHostsFile = "~/.ssh/known_hosts";
-        ControlMaster = "auto";
-        ControlPath = "~/.ssh/master-%r@%n:%p";
-        ControlPersist = "yes";
+          "orangepi" = {
+            User = "urie";
+            HostName = "orangepi5plus.lan";
+          }
+          // proxyJump;
+
+          "rpi4" = {
+            User = "urie";
+            HostName = "raspberrypi.lan";
+          }
+          // proxyJump;
+
+          "termux.lan" = {
+            Port = 8022;
+            User = "nix-on-droid";
+          };
+
+          "kindle.lan" = {
+            Port = 2222;
+            User = "root";
+          };
+
+          "devbox" = {
+            User = "yangrui.0";
+            HostName = "10.37.107.28";
+          };
+
+          "*" = {
+            ForwardAgent = false;
+            AddKeysToAgent = "no";
+            Compression = false;
+            ServerAliveInterval = 30;
+            ServerAliveCountMax = 2;
+            HashKnownHosts = false;
+            UserKnownHostsFile = "~/.ssh/known_hosts";
+            ControlMaster = "auto";
+            ControlPath = "~/.ssh/master-%r@%n:%p";
+            ControlPersist = "yes";
+          };
+        };
       };
     };
-  };
 }

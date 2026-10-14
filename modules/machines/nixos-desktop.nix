@@ -19,6 +19,7 @@
       ];
 
       my.mainUser.name = "urie";
+      my.homeNetwork = true;
 
       environment.systemPackages = with pkgs; [
         kicad

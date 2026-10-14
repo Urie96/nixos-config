@@ -110,6 +110,7 @@
       self,
       self',
       inputs',
+      config,
       ...
     }:
     {
@@ -129,6 +130,9 @@
             self'
             inputs'
             ;
+          # nix-on-droid 的 home-manager 模块不像 home-manager 的 nixos/darwin
+          # 模块那样自动注入 osConfig，这里手动补上，让 home 模块能读取 my.* 主机选项。
+          osConfig = config;
         };
         config = { config, pkgs, ... }: {
           imports = [
