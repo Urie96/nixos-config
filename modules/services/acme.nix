@@ -30,7 +30,7 @@
           environmentFile = config.clan.core.vars.generators.tencent_cloud.files.acme_dns_api_env.path;
           dnsResolver = "223.5.5.5";
           extraLegoFlags = [
-            "--dns.propagation-wait"
+            "--dns.propagation.wait"
             "1m"
           ];
         };
