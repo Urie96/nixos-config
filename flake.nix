@@ -45,6 +45,10 @@
     llm-agents.inputs.nixpkgs.follows = "nixpkgs";
     llm-agents.inputs.treefmt-nix.follows = "treefmt-nix";
 
+    niks3.url = "github:Mic92/niks3";
+    niks3.inputs.nixpkgs.follows = "nixpkgs";
+    niks3.inputs.treefmt-nix.follows = "treefmt-nix";
+
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
