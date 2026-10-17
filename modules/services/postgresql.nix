@@ -1,3 +1,4 @@
+{ self, ... }:
 {
   flake.nixosModules.postgresql =
     # 如果升级nixpkgs之后postgresql-setup报错： database "postgres" has a collation version mismatch
@@ -10,4 +11,8 @@
       services.postgresqlBackup.enable = true;
       services.postgresqlBackup.backupAll = true;
     };
+
+  flake.sysModules.postgresql = {
+    imports = [ "${self.inputs.nixpkgs.outPath}/nixos/modules/services/databases/postgresql.nix" ];
+  };
 }
