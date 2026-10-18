@@ -24,6 +24,8 @@
       # 启动时渲染到 tmpfs；公开证书 assets/mitmproxy-ca-cert.pem 直接进 store。
       # 模板把「私钥占位符 + 公开证书」拼成 mitmproxy 需要的 mitmproxy-ca.pem（私钥+证书）。
       sops.secretsFile = ./secrets.yaml;
+      # 必须显式列出 key：自动解析要 eval 阶段跑 sops-render --list-keys，属 IFD，已移除。
+      sops.keys = [ "mitmproxy_ca_key" ];
       sops.templates."mitmproxy-ca.pem".content =
         config.sops.placeholder.mitmproxy_ca_key + builtins.readFile "${self}/assets/mitmproxy-ca-cert.pem";
 

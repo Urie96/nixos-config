@@ -15,6 +15,15 @@
       ];
 
       sops.secretsFile = ./secrets.yaml;
+      # 必须显式列出 key：自动解析要 eval 阶段跑 sops-render --list-keys，属 IFD，已移除。
+      sops.keys = [
+        "rclone_openlist_pass"
+        "rclone_aws_access_key_id"
+        "rclone_aws_secret_access_key"
+        "rclone_google_drive_client_secret"
+        "rclone_google_drive_token"
+        "rclone_nextcloud_pass"
+      ];
       # 私钥默认从 $XDG_CONFIG_HOME/sops/age/keys.txt 找；也可以显式指定：
       # sops.keyFile = "/home/urie/.config/sops/age/keys.txt";
 

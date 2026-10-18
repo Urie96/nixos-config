@@ -6,6 +6,7 @@
     {
       pkgs,
       inputs',
+      lib,
       ...
     }:
     {
@@ -31,7 +32,7 @@
       ];
 
       services.btrfs.autoScrub.enable = true;
-      nix.gc.automatic = false;
+      nix.gc.automatic = lib.mkForce false;
 
       # 外挂机械盘（sda1，btrfs label myHDD）上的自用数据子卷（游戏、杂项）。
       # 与 btrbk 的备份目标 @backup 分开，避免被备份清理逻辑牵连；
@@ -55,16 +56,16 @@
       ###### Qemu编译arm  ######
       # Register binfmt_misc handlers for aarch64 on x86_64
       # This allows running aarch64 binaries natively on x86_64
-      boot.binfmt.emulatedSystems = [
-        "aarch64-linux"
-      ];
-
-      # Add aarch64-linux as an extra platform for building
-      nix.settings = {
-        extra-platforms = [
-          "aarch64-linux"
-        ];
-      };
+      # boot.binfmt.emulatedSystems = [
+      #   "aarch64-linux"
+      # ];
+      #
+      # # Add aarch64-linux as an extra platform for building
+      # nix.settings = {
+      #   extra-platforms = [
+      #     "aarch64-linux"
+      #   ];
+      # };
 
       srvos.detect-hostname-change.enable = false;
     };

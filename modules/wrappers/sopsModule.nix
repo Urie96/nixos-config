@@ -14,29 +14,6 @@
     let
       cfg = config.sops;
 
-      # 自动解析 secrets 文件的结构（不解密）得到 key 名。
-      # sops 只加密 value，key 是明文，所以这一步不需要私钥；
-      # 但需要 eval 阶段能读到文件：只有 path literal 和 store path 可以，
-      # 运行时路径（/home/... 之类）在纯 eval 下会报错。
-      detectedKeys =
-        if cfg.secretsFile == null then
-          [ ]
-        else if !(builtins.isPath cfg.secretsFile || lib.isStorePath (toString cfg.secretsFile)) then
-          throw ''
-            sops.keys 必须显式设置：${toString cfg.secretsFile} 不是 path literal / store path，
-            eval 阶段读不到（纯 eval 不允许访问仓库外的绝对路径）。
-            自动解析只支持 ./secrets.yaml 这类（会进 store 的）路径。
-          ''
-        else
-          lib.importJSON (
-            pkgs.runCommandLocal "sops-detected-keys.json" { } ''
-              ${lib.getExe cfg.package} --list-keys \
-                --secrets ${lib.escapeShellArg "${cfg.secretsFile}"} \
-                ${lib.optionalString (cfg.format != null) "--format ${lib.escapeShellArg cfg.format}"} \
-                > $out
-            ''
-          );
-
       # 运行时路径里允许出现的字符：$ {} 是留给运行时变量展开的（如 $XDG_RUNTIME_DIR），
       # 其余 shell 元字符一律禁止，避免生成的命令行被注入。
       pathAllowedChars = lib.stringToCharacters "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_./~-: {},$";
@@ -125,6 +102,12 @@
       problems =
         lib.optionals (cfg.secretsFile == null) [ "启用后必须设置 sops.secretsFile" ]
         ++ lib.optionals (cfg.templates == { }) [ "启用后至少要有一个 sops.templates.<name>" ]
+        ++ lib.optionals (cfg.keys == null) [
+          ''
+            必须显式设置 sops.keys：列出 secrets 文件里的 key 名（sops.keys = [ "xxx" ];）。
+            不再提供自动解析：它需要 eval 阶段跑 `sops-render --list-keys`，
+            属于 IFD（求值期构建，aarch64 等其它架构还会拉模拟编译）。''
+        ]
         ++ lib.optionals ((config.wrapperImplementation or "nix") == "binary") [
           "wrapperImplementation = \"binary\" 时 runShell 会被忽略，秘密不会被渲染，请改用 \"nix\" 或 \"shell\""
         ]
@@ -233,23 +216,17 @@
           default = null;
           example = [ "anthropic_api_key" ];
           description = ''
-            secrets key 名单。`null`（默认）= 从 `secretsFile` 自动解析；
-            显式设置时覆盖自动解析（secretsFile 是运行时路径、eval 阶段读不到时用这个）。
+            secrets key 名单（必填）。用于生成默认 `placeholder`：
+            `config.sops.placeholder.db_password` → `<SOPS:db_password:PLACEHOLDER>`。
           '';
-        };
-
-        detectedKeys = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          readOnly = true;
-          description = "从 `secretsFile` 自动解析出来的（扁平化后的）key 名，不解密。";
         };
 
         placeholder = lib.mkOption {
           type = lib.types.attrsOf lib.types.singleLineStr;
-          default = lib.genAttrs (if cfg.keys != null then cfg.keys else cfg.detectedKeys) (
+          default = lib.genAttrs (if cfg.keys != null then cfg.keys else [ ]) (
             name: "<SOPS:${name}:PLACEHOLDER>"
           );
-          defaultText = lib.literalExpression ''lib.genAttrs (config.sops.keys or config.sops.detectedKeys) (name: "<SOPS:''${name}:PLACEHOLDER>")'';
+          defaultText = lib.literalExpression ''lib.genAttrs config.sops.keys (name: "<SOPS:''${name}:PLACEHOLDER>")'';
           description = ''
             模板里引用的占位符字符串，默认由 `sops.keys` 生成：
             `config.sops.placeholder.db_password` → `<SOPS:db_password:PLACEHOLDER>`。
@@ -259,8 +236,6 @@
       };
 
       config = lib.mkIf cfg.enable {
-        sops.detectedKeys = detectedKeys;
-
         runShell = [
           {
             name = "SOPS_RENDER";
