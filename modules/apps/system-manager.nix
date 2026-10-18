@@ -10,6 +10,7 @@
     {
       apps.system-manager = {
         type = "app";
+        meta.description = "在当前主机上运行 system-manager switch（macOS / 非 NixOS 主机用）";
         program = "${pkgs.writeShellScript "system-manager" ''
           set -x
           export PATH=${

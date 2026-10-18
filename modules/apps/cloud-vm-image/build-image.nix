@@ -63,6 +63,10 @@
     {
       # diskoImagesScript 的 out 本身就是可执行脚本（不按 bin/ 布局），
       # 所以这里给 program 传它的 store path，而不是直接给 derivation。
-      apps.build-cloud-vm-image.program = "${x86_bootstrap.config.system.build.diskoImagesScript}";
+      apps.build-cloud-vm-image = {
+        type = "app";
+        meta.description = "构建 x86_64 云主机镜像（disko raw 镜像，用于腾讯云/阿里云等 VPS）";
+        program = "${x86_bootstrap.config.system.build.diskoImagesScript}";
+      };
     };
 }
