@@ -1,0 +1,30 @@
+name: "PR check"
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - main
+
+# A new push supersedes the previous run: there is no point evaluating a tree
+# that is already stale.
+concurrency:
+  group: pr-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    # Context reported to Gitea: "PR check / check (pull_request)".
+    runs-on: x86_64-linux
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check
+        run: nix flake check --no-build --option allow-import-from-derivation false

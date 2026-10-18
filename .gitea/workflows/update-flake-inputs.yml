@@ -1,0 +1,119 @@
+name: "Update flake inputs"
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Weekly on Sunday (UTC)
+  workflow_dispatch:
+  repository_dispatch:
+
+concurrency:
+  group: update-flake-inputs
+  # Let a running update finish; a second one would fight over the same branch.
+  cancel-in-progress: false
+
+env:
+  # Branch that carries the flake.lock change. Fixed name on purpose: every run
+  # resets it to the target branch and force-pushes, so re-running the job
+  # updates the *same* open PR instead of opening another one. Merging deletes
+  # it, so the next run starts from a freshly recreated branch.
+  UPDATE_BRANCH: update-flake-inputs
+  BASE_BRANCH: main
+
+jobs:
+  update-flake-inputs:
+    # Must match the label the runners register with
+    # (`services.gitea-actions-runner` uses `${system}:host`, i.e. x86_64-linux
+    # on home-server / mac-mini / orangepi5plus).
+    runs-on: x86_64-linux
+    timeout-minutes: 60
+    permissions:
+      # Only a fallback for the `git push` below; every API call goes through
+      # the PAT, which carries its own permissions.
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # nix resolves the flake through git; a shallow clone makes it fail
+          # once it has to look past the shallow boundary.
+          fetch-depth: 0
+          # A real user's PAT, not the job token. Gitea ignores events whose
+          # actor is the `gitea-actions` user, so a PR opened (or a branch
+          # pushed) with the job token gets no `pull_request` run in
+          # pr-check.yml at all — and without that check the auto-merge would
+          # wait forever. checkout persists this token for the repository, so
+          # the plain `git push` below authenticates as the same user.
+          token: ${{ secrets.BOT_TOKEN }}
+
+      - name: Require the bot token
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          set -eu
+          if [ -z "${BOT_TOKEN:-}" ]; then
+            echo "secrets.BOT_TOKEN is not set; a PR opened with the job token would never be merged" >&2
+            exit 1
+          fi
+
+      - name: Configure git
+        run: |
+          set -eu
+          git config user.name "gitea-actions[bot]"
+          git config user.email "gitea-actions[bot]@noreply.local"
+
+      - name: Update flake inputs
+        id: bump
+        run: |
+          set -eu
+
+          # Start from the current target branch: the PR then contains only the
+          # flake.lock change, and leftovers from an older run cannot sneak in.
+          git fetch --no-tags origin "+refs/heads/$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH"
+          git checkout -B "$UPDATE_BRANCH" "origin/$BASE_BRANCH"
+
+          nix flake update
+
+          if git diff --quiet -- flake.lock; then
+            echo "flake inputs are already up to date; nothing to do"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git diff --stat -- flake.lock
+          git add flake.lock
+          git commit -m "chore(flake): update flake inputs"
+
+          # Force is safe: this branch is only ever written by this job, and the
+          # remote copy may still hold the pre-merge state of a previous run.
+          git push --force origin "HEAD:refs/heads/$UPDATE_BRANCH"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # Creates the pull request (or reuses the open one the force-push above
+      # just updated) and POSTs /pulls/{n}/merge with merge_when_checks_succeed,
+      # so the PR lands by itself as soon as "PR check / check (pull_request)"
+      # is green. Gitea re-evaluates the scheduled merge whenever a commit
+      # status turns success, so scheduling it before any check has run is fine.
+      - name: Open pull request and schedule auto-merge
+        if: steps.bump.outputs.changed == 'true'
+        uses: urie96/gitea-pr
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          head: update-flake-inputs
+          base: main
+          title: "chore(flake): update flake inputs"
+          body: |
+            Automated `nix flake update`.
+
+            Contains only the regenerated `flake.lock`; the `Update flake inputs`
+            workflow force-pushes this branch on every run, so this PR is
+            updated in place until it is merged.
+          # `dependencies` is created by the action if the repository has no
+          # label with that name yet.
+          labels: dependencies
+          # `merge` rather than the repository default: the merge commit keeps
+          # this branch's commit as an ancestor of main. `fast-forward-only` is
+          # not usable here, it ignores merge_when_checks_succeed on some Gitea
+          # versions.
+          merge-method: merge
+          delete-branch: true
