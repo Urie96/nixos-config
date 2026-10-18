@@ -12,6 +12,7 @@
       imports = with self.nixosModules; [
         full
         basePkgs
+        gitea-runner
       ];
 
       my.mainUser.name = "urie";

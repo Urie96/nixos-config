@@ -10,6 +10,7 @@
     {
       imports = with self.darwinModules; [
         full
+        gitea-runner
       ];
 
       system.primaryUser = "urie";

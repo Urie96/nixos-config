@@ -23,7 +23,7 @@
       nur = self.inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system};
     in
     {
-      package = nur.kitty;
+      package = pkgs.kitty;
       themeFile = "Catppuccin-Mocha";
       font.name = "Maple Mono NF CN";
       font.size = 15;

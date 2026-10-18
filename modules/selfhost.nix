@@ -12,6 +12,7 @@
       btrbk
       navidrome
       gitea
+      gitea-runner
       podman
       openlist
       samba

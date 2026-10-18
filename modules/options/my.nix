@@ -23,6 +23,7 @@ let
 in
 {
   flake.nixosModules.common = commonOptions;
+  flake.darwinModules.common = commonOptions;
   flake.sysModules.common = commonOptions;
   flake.droidModules.common = commonOptions;
 }
