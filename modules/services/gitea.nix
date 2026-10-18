@@ -85,6 +85,7 @@ in
           nodejs
           wget
           tea
+          openssh
         ];
       };
     };
@@ -468,6 +469,7 @@ in
             nix
             nodejs
             wget
+            openssh
           ];
         };
       };
