@@ -1,0 +1,34 @@
+name: "Build and populate cache"
+on:
+  push:
+    branches:
+      - main
+      - master
+
+# One run per push, but never cancel a running one: these jobs exist to warm the
+# runners' stores, and a cancelled build leaves the store only partly populated.
+# (Runs are queued, jobs inside a run still run in parallel.)
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        system:
+          - x86_64-linux
+          # - aarch64-linux
+          # - aarch64-darwin
+    runs-on: ${{ matrix.system }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build (${{ matrix.system }})
+        run: |
+          set -euo pipefail
+          nix build --keep-going -o result .#ci.${{ matrix.system }}.all
+          echo "### ${{ matrix.system }} closure size"
+          nix path-info -Sh ./result
