@@ -22,7 +22,12 @@ let
         "https://cache.numtide.com"
       ];
       nix.settings.trusted-public-keys = [
+        # harmonia（cache.lubui.com）的缓存 key：它给 narinfo 签名。
         "cache.lubui.com-2:tfGYA7ZOj7ubsmDDpe4q5n4jl58lsbtOa0N5QMHt1dY="
+        # 构建签名 key：构建机（home-server / orangepi5plus / mac-mini）的 nix daemon
+        # 用它给本机构建的包签名（模块 modules/system/nix-signing.nix），
+        # home-server 导入这些包、其它机器替用这些路径时都靠它过 require-sigs。
+        "cache.lubui.com-1:sOTVoQUdzu6FAIBD8bqWVWtMRdkr3LSHRMpw4ggKVFA="
         "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
       ];
     };

@@ -29,25 +29,27 @@
 ## 部署和验证规则
 
 - 不要执行任何会切换或激活系统配置的命令，包括 `nixos-rebuild switch`、`darwin-rebuild switch` 和任何等效的 switch/activate 命令。
-- 不要为了验证配置而执行部署。修改完成后如果需要检查是否有错误，使用 Clan 的 build 命令构建目标机器：
+- 不要为了验证配置而执行部署。修改完成后如果需要检查是否有错误，只允许对**本机**（运行命令的主机，`hostname -s`，对应 `modules/machines/<hostname>.nix`）运行：
 
   ```bash
-  clan machines build <machine>
+  clan machines build <hostname>
   ```
 
-  例如检查家庭服务器：
+  例如在 `home-server` 上检查家庭服务器：
 
   ```bash
   clan machines build home-server
   ```
 
-- `clan machines build` 默认构建目标机器的 `toplevel`，会进行配置评估和构建，但不会切换正在运行的系统，也不会部署到远程机器。
-- 只想进行配置评估、不实际构建产物时，可以使用：
+- 禁止对非本机运行 `clan machines build`，包括加 `--dry-run`。该命令始终在运行命令的机器上执行 `nix build`，不读取 `deploy.buildHost`；当目标是 `aarch64-linux`（如 `orangepi5plus`、`rpi4`）时，`home-server` 会通过 `boot.binfmt.emulatedSystems` 的 qemu 用户态模拟整套编译，`max-jobs = 16` 会打满 CPU 且耗时极长。需要验证其他机器时，交给用户执行，或改用不会切换系统的远程构建：
 
   ```bash
-  clan machines build <machine> --dry-run
+  nixos-rebuild build --flake .#<machine> --build-host <user>@<host>
   ```
 
+  该命令在本机求值、在 `<host>` 上构建，不会激活或修改目标机器（会把闭包回传到本机并生成 `./result`）。
+
+- `clan machines build` 默认构建目标机器的 `toplevel`，只进行配置评估和构建，不会切换正在运行的系统，也不会部署到远程机器。
 - 如果用户明确要求部署，使用 Clan 管理机器更新，而不是 `nixos-rebuild switch`：
 
   ```bash

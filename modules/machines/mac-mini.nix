@@ -11,6 +11,9 @@
       imports = with self.darwinModules; [
         full
         gitea-runner
+        # 本机构建的包自动带缓存签名（harmonia 与客户端都认这把 key）：
+        # 推到 home-server 的缓存时才能过 require-sigs 检查。
+        nix-signing
       ];
 
       system.primaryUser = "urie";

@@ -39,6 +39,7 @@
       sso
       webdav
       harmonia
+      cache-push
       apprise-server
       # llm-api-proxy
       postgresql
