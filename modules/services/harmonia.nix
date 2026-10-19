@@ -46,16 +46,18 @@
     };
 
   flake.sysModules.harmonia =
+    { config, ... }:
     let
       harmoniaModulePath = "${self.inputs.nixpkgs.outPath}/nixos/modules/services/networking/harmonia.nix";
-      secret = "/var/lib/harmonia/harmonia.secret";
     in
     {
       imports = [ harmoniaModulePath ];
 
+      sops.secrets.nix-sign = { };
+
       services.harmonia.cache = {
         enable = true;
-        signKeyPaths = [ secret ];
+        signKeyPaths = [ config.sops.secrets.nix-sign.path ];
         settings.priority = 30;
       };
 

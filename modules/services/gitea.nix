@@ -1,3 +1,4 @@
+{ self, ... }:
 let
   root_url = "https://git.lubui.com:8443";
 
@@ -33,6 +34,10 @@ in
       services.gitea = {
         enable = true;
         settings.log.LEVEL = "Error";
+        # 没有注册入口，首次装完要手动建管理员：
+        #   GITEA=$(systemctl cat gitea | sed -n 's|^ExecStart=\(.*/bin/gitea\) .*|\1|p' | tail -1)
+        #   sudo -u gitea env GITEA_WORK_DIR=/var/lib/gitea "$GITEA" admin user create \
+        #     --admin --username <name> --email <mail>
         settings.service.DISABLE_REGISTRATION = true;
         # settings.metrics.ENABLED = true;
         settings.server = {
@@ -63,6 +68,47 @@ in
 
     };
 
+  flake.sysModules.gitea = { lib, ... }: {
+    imports = [
+      "${self.inputs.nixpkgs.outPath}/nixos/modules/services/misc/gitea.nix"
+      self.sysModules.postgresql
+    ];
+
+    # system-manager 没有 mysql 模块，这里只声明一个空壳 option。
+    # 真要用 mysql 得换成导入 nixpkgs 的 mysql 模块。
+    options.services.mysql = lib.mkOption {
+      type = lib.types.attrs;
+      default = { };
+      description = ''
+        system-manager 上的占位 option：gitea 模块无条件往 services.mysql 写定义，
+        没有这个声明就没法求值。不要在 devbox 上依赖它做任何事。
+      '';
+    };
+
+  };
+
+  flake.sysModules.gitea-runner =
+    {
+      pkgs,
+      config,
+      lib,
+      ...
+    }:
+    {
+      imports = [
+        "${self.inputs.nixpkgs.outPath}/nixos/modules/services/continuous-integration/gitea-actions-runner.nix"
+      ];
+
+      # 上游模块无条件读取 config.virtualisation.{docker,podman}.enable（即使注册的
+      # 全是 host 标签），system-manager 没有这两个 option，这里声明空壳保持默认 false。
+      # host 模式用不到容器运行时。
+      options.virtualisation = {
+        docker.enable = lib.mkEnableOption "docker (placeholder needed by the gitea-actions-runner module)";
+        podman.enable = lib.mkEnableOption "podman (placeholder needed by the gitea-actions-runner module)";
+      };
+
+    };
+
   flake.nixosModules.gitea-runner =
     { config, pkgs, ... }:
     {
@@ -86,6 +132,7 @@ in
           wget
           tea
           openssh
+          diffutils
         ];
       };
     };
@@ -470,6 +517,7 @@ in
             nodejs
             wget
             openssh
+            diffutils
           ];
         };
       };
