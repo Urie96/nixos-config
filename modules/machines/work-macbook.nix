@@ -3,8 +3,11 @@
 
   clan.machines.work-macbook =
     {
+      config,
       inputs',
+      lib,
       self,
+      pkgs,
       ...
     }:
     let
@@ -14,6 +17,7 @@
       imports = with self.darwinModules; [
         full
         disable-awdl
+        gitea-runner
       ];
 
       environment.variables = {
@@ -23,6 +27,46 @@
       environment.systemPackages = with inputs'.nur-packages.packages; [
         feishu
       ];
+
+      services.gitea-actions-runner.instances.runner.enable = lib.mkForce false;
+
+      services.gitea-actions-runner.instances.mac-runner = {
+        enable = true;
+        name = "mac-runner";
+        url = "http://10.37.107.28:3000/";
+        tokenFile = config.sops.templates."gitea-runner-token.env".path;
+        # 与 selfhost 的 runner 用同一套标签；末尾的 :host 必须保留，
+        # 模块只有检测到 *:host 才会把 hostPackages 加进 PATH。
+        labels = [ "${pkgs.stdenv.hostPlatform.system}:host" ];
+        hostPackages = with pkgs; [
+          bash
+          coreutils
+          curl
+          gawk
+          gitMinimal
+          gnused
+          jq
+          # 用 daemon 同一个 nix：runner 以 DynamicUser 运行，走 nix-daemon 构建。
+          config.nix.package
+          nodejs
+          openssh
+          wget
+          diffutils
+        ];
+      };
+
+      sops = {
+        age.keyFile = "/Users/${config.system.primaryUser}/.config/sops/age/keys.txt";
+        secrets.gitea-runner-token.sopsFile = ./devbox/secrets.yaml;
+      };
+
+      sops.templates."gitea-runner-token.env" = {
+        owner = "_gitea-runner"; # 与 runner 的运行用户一致
+        content = ''
+          GITEA_RUNNER_REGISTRATION_TOKEN=${config.sops.placeholder.gitea-runner-token}
+          TOKEN=${config.sops.placeholder.gitea-runner-token}
+        '';
+      };
 
       # `clan machines update` 不带机器名时跳过它，
       clan.core.deployment.requireExplicitUpdate = true;
