@@ -157,8 +157,8 @@
                 HTTP_PROXY = proxy;
                 HTTPS_PROXY = proxy;
                 ALL_PROXY = proxy;
-                no_proxy = "code.byted.org,10.37.107.28,localhost,127.0.0.1,*.byted.org";
-                NO_PROXY = "code.byted.org,10.37.107.28,localhost,127.0.0.1,*.byted.org";
+                no_proxy = "10.37.107.28,localhost,127.0.0.1,.byted.org";
+                NO_PROXY = "10.37.107.28,localhost,127.0.0.1,.byted.org";
               };
 
             }
