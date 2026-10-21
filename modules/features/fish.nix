@@ -2,14 +2,13 @@
   flake.nixosModules.fish =
     {
       pkgs,
-      self',
       config,
       ...
     }:
     {
       programs.fish = {
         enable = true;
-        package = self'.packages.fish;
+        package = config.wrappers.fish.wrapper;
         useBabelfish = true;
       };
 
@@ -25,16 +24,14 @@
 
   flake.darwinModules.fish =
     {
-      pkgs,
       config,
-      self',
       ...
     }:
     {
       programs = {
         fish = {
           enable = true;
-          package = self'.packages.fish;
+          package = config.wrappers.fish.wrapper;
           useBabelfish = true;
         };
         # direnv = {
@@ -47,22 +44,21 @@
     };
 
   flake.sysModules.fish =
-    { config, self', ... }:
+    { config, ... }:
     {
-      users.users.${config.my.mainUser.name}.shell = self'.packages.fish;
+      users.users.${config.my.mainUser.name}.shell = config.wrappers.fish.wrapper;
     };
 
   flake.droidModules.fish =
     {
       config,
       lib,
-      self',
       ...
     }:
     {
       user.shell = lib.getExe config.programs.fish.package;
       programs.fish.enable = true;
-      programs.fish.package = self'.packages.fish;
+      programs.fish.package = config.wrappers.fish.wrapper;
     };
 
 }

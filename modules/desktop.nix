@@ -4,7 +4,6 @@
     {
       pkgs,
       inputs',
-      self',
       ...
     }:
     {
@@ -12,6 +11,7 @@
         self.inputs.srvos.nixosModules.desktop
       ]
       ++ (with self.nixosModules; [
+        kitty
         hyprland
         font
         keyd
@@ -29,7 +29,6 @@
         grim # 截图
         slurp # 截图选区
 
-        self'.packages.kitty
         chromium
         ferdium
         inputs'.zen-browser.packages.default

@@ -4,6 +4,14 @@
     imports = with self.nixosModules; [
       base
 
+      rclone
+      himalaya
+      mbsync
+      notmuch
+      mitmproxy
+      vdirsyncer
+      todoman
+
       fullPkgs
     ];
 
@@ -25,6 +33,15 @@
         homebrew
         font
 
+        rclone
+        himalaya
+        mbsync
+        notmuch
+        mitmproxy
+        vdirsyncer
+        todoman
+        kitty
+
         fullPkgs
       ];
 
@@ -41,6 +58,13 @@
   flake.sysModules.full = { config, ... }: {
     imports = with self.sysModules; [
       base
+      rclone
+      himalaya
+      mbsync
+      notmuch
+      mitmproxy
+      vdirsyncer
+      todoman
       fullPkgs
     ];
 

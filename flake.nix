@@ -137,6 +137,37 @@
         (import-tree ./modules)
       ];
 
+      # wrapper 的 `.install` 模块靠 `_class` 从 `config.modules.{nixos,darwin,...}` 里
+      # 选安装行为。nixos/darwin 的 evalModules 会把 class 传给模块参数，直接 import 即可。
+      flake.nixosModules = builtins.mapAttrs (_: v: v.install) self.wrappers;
+      flake.darwinModules = builtins.mapAttrs (_: v: v.install) self.wrappers;
+
+      # system-manager 的 evalModules 不传 class（模块参数 `_class` 是 null），install 模块
+      # 里 `config.modules.${_class}` 会直接抛 "expected a string but found null"。
+      # 这里显式调用 functor 把 `_class` 补成 "nixos"：system-manager 也有
+      # environment.systemPackages，所以 install 行为可以直接复用 `modules.nixos` 那套。
+      flake.sysModules = builtins.mapAttrs (
+        _: v:
+        { pkgs, ... }:
+        { imports = [ (v.install { _class = "nixos"; inherit pkgs; }) ]; }
+      ) self.wrappers;
+
+      # nix-on-droid 的 evalModules 用 class = "nixOnDroid"，不在 wlib 内置的
+      # nixos/darwin/homeManager/hjem 里，install 模块只会声明 `wrappers.<name>` 选项、
+      # 不安装任何东西（`config.modules.${_class} or []` 拿到空列表）。
+      # 所以这里 import 它只为拿到 `wrappers.<name>.{enable,wrapper}`，包自己塞进
+      # nix-on-droid 的 environment.packages（nix-on-droid 没有 environment.systemPackages）。
+      flake.droidModules = builtins.mapAttrs (
+        name: v:
+        { pkgs, config, lib, ... }:
+        {
+          imports = [ (v.install { _class = "nixOnDroid"; inherit pkgs; }) ];
+          environment.packages = lib.mkIf config.wrappers.${name}.enable [
+            config.wrappers.${name}.wrapper
+          ];
+        }
+      ) self.wrappers;
+
       perSystem = { system, ... }: {
         _module.args.pkgs = import inputs.nixpkgs {
           inherit system;

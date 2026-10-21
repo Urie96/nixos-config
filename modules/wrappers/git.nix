@@ -177,4 +177,21 @@
         };
       };
     };
+
+  # 安装入口：modules/base.nix 里 `imports = with self.<class>; [ git ]` 引用。
+  # 这里不走通用的 `wrappers.git.enable`：srvos 等模块会直接往 systemPackages 里塞
+  # git-minimal，而 NixOS 的 system-path 用 ignoreCollisions，只有 priority 更低
+  # （数字更小）的那个才会真正落到 sw/bin/git，所以要 hiPrio 保证被包裹的 git 胜出。
+  flake.nixosModules.git =
+    { config, lib, ... }:
+    {
+      environment.systemPackages = [ (lib.hiPrio config.wrappers.git.wrapper) ];
+    };
+  flake.darwinModules.git =
+    { config, lib, ... }:
+    {
+      environment.systemPackages = [ (lib.hiPrio config.wrappers.git.wrapper) ];
+    };
+  flake.sysModules.git = { wrappers.git.enable = true; };
+  flake.droidModules.git = { wrappers.git.enable = true; };
 }
