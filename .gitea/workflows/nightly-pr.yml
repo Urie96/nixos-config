@@ -1,4 +1,4 @@
-name: "Nightly PR from dev branch"
+name: "Nightly PR from daily branch"
 
 on:
   schedule:
@@ -22,7 +22,7 @@ jobs:
           token: ${{ secrets.BOT_TOKEN }}
           head: daily
           base: main
-          title: Nightly merge dev into main
+          title: Nightly merge daily into main
           # Created by the action if the repository has no such label yet.
           labels: automated
           merge-method: merge
