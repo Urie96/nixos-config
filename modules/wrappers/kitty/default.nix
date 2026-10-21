@@ -185,4 +185,8 @@
         transparent_background_colors = "#24273a@0.9 #303347@0.9 #1e2030@0.9";
       };
     };
+
+  # 安装入口：desktop.nix（nixos）/ darwin full 里引用。kitty 目前只有这两个 class 装。
+  flake.nixosModules.kitty = { wrappers.kitty.enable = true; };
+  flake.darwinModules.kitty = { wrappers.kitty.enable = true; };
 }

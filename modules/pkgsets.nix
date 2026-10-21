@@ -1,24 +1,14 @@
 let
   getBasePkgs =
     {
-      self',
       inputs',
       pkgs,
       ...
     }:
-    (with self'.packages; [
-      lazygit
-      neovim
-      fish
-      yazi
-      tmux
-      pi
-      # srvos 等模块会直接往 systemPackages 里塞 git-minimal，而 NixOS 的
-      # system-path 用的是 ignoreCollisions = true；只有 priority 更低（数字更小）
-      # 的那个才会真正落到 sw/bin/git。这里 hiPrio 保证被包裹的 git 胜出。
-      (pkgs.lib.hiPrio git)
-    ])
-    ++ (with inputs'.nur-packages.packages; [
+    # 被包裹的包（lazygit/neovim/yazi/tmux/pi/git/fish 等）不在这里列：
+    # 它们由各自 wrapper 导出的 `<class>Modules.<name>` 安装，
+    # 在 modules/base.nix、modules/full.nix 里按名字引用。
+    (with inputs'.nur-packages.packages; [
       copy
       pick-window
       slim-kitten
@@ -159,7 +149,6 @@ let
     {
       pkgs,
       inputs',
-      self',
       ...
     }:
     let
@@ -167,13 +156,8 @@ let
     in
     with pkgs;
     [
-      self'.packages.rclone
-      self'.packages.himalaya
-      self'.packages.mbsync
-      self'.packages.notmuch
-      self'.packages.mitmproxy
-      self'.packages.vdirsyncer
-      self'.packages.todoman
+      # rclone/himalaya/mbsync/notmuch/mitmproxy/vdirsyncer/todoman 由各自的
+      # `<class>Modules.<name>` 安装（见 modules/full.nix）。
       nur.lazydeck
 
       yq-go
@@ -282,9 +266,6 @@ in
 
           tinycast
           arc
-        ])
-        ++ (with self'.packages; [
-          kitty
         ]);
     };
 

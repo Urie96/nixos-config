@@ -65,3 +65,27 @@ out="$(nix build .#foo --print-out-paths)"
 ```
 
 完成标准：程序用的是 `$out` 里那份配置（用程序自己的 dry-run/verbose 选项，或核对 `$out` 里的配置文件内容）。
+
+## 安装：写到模块里，不要在 pkgsets 里列
+
+`modules/pkgsets.nix` 只放普通 nixpkgs/nur 包。被包装的包（wrapper）由 wrapper 自己的文件导出安装模块，再在 `modules/base.nix`（基础环境）或 `modules/full.nix`（完整环境）里按名字引用：
+
+```nix
+# modules/wrappers/foo/default.nix，与 flake.wrappers.foo 并列
+flake.nixosModules.foo = { wrappers.foo.enable = true; };
+flake.darwinModules.foo = { wrappers.foo.enable = true; };
+flake.sysModules.foo = { wrappers.foo.enable = true; };
+flake.droidModules.foo = { wrappers.foo.enable = true; };
+```
+
+```nix
+# modules/base.nix 或 modules/full.nix
+imports = with self.nixosModules; [ foo ];
+```
+
+`wrappers.<name>.enable` 来自 nix-wrapper-modules 的 `.install` 模块（`flake.nix` 里把 `v.install` 批量导出成 `flake.<class>Modules.<name>`）。各 class 的落地点：nixos / nix-darwin / system-manager → `environment.systemPackages`，nix-on-droid → `environment.packages`（`flake.nix` 里有对应的薄壳，因为 system-manager 不传 `_class`、nix-on-droid 的 class 是 `nixOnDroid`）。
+
+两个例外：
+
+- `programs.<x>.package` 本身就会把包加进系统包列表（如 `programs.fish.package`），此时不要再 `enable`，否则同一路径装两遍。
+- 需要 `meta.priority` 才能赢过其他模块塞进来的同名包时（如 `git` 对 srvos 的 `git-minimal`），别用 `enable`，直接在模块里写 `environment.systemPackages = [ (lib.hiPrio config.wrappers.<name>.wrapper) ];`。

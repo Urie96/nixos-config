@@ -72,4 +72,10 @@
 
       };
     };
+
+  # 安装入口：modules/full.nix 里 `imports = with self.<class>; [ himalaya ]` 引用。
+  # 通用的 install 模块只为声明 `wrappers.himalaya.*` 选项，真正落地靠 enable 打开。
+  flake.nixosModules.himalaya = { wrappers.himalaya.enable = true; };
+  flake.darwinModules.himalaya = { wrappers.himalaya.enable = true; };
+  flake.sysModules.himalaya = { wrappers.himalaya.enable = true; };
 }

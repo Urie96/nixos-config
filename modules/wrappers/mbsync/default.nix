@@ -33,4 +33,10 @@
         };
       };
     };
+
+  # 安装入口：modules/full.nix 里 `imports = with self.<class>; [ mbsync ]` 引用。
+  # 通用的 install 模块只为声明 `wrappers.mbsync.*` 选项，真正落地靠 enable 打开。
+  flake.nixosModules.mbsync = { wrappers.mbsync.enable = true; };
+  flake.darwinModules.mbsync = { wrappers.mbsync.enable = true; };
+  flake.sysModules.mbsync = { wrappers.mbsync.enable = true; };
 }

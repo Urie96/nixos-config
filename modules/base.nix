@@ -6,6 +6,12 @@
       nix-daemon
       user
       fish
+      lazygit
+      neovim
+      yazi
+      tmux
+      pi
+      git
       basePkgs
       catppuccin
     ];
@@ -21,6 +27,13 @@
 
   flake.darwinModules.base = {
     imports = with self.darwinModules; [
+      fish
+      lazygit
+      neovim
+      yazi
+      tmux
+      pi
+      git
       home
       common
       rime
@@ -36,6 +49,12 @@
       nix-daemon
       user
       fish
+      lazygit
+      neovim
+      yazi
+      tmux
+      pi
+      git
       basePkgs
     ];
   };
@@ -44,6 +63,12 @@
     imports = with self.droidModules; [
       common
       fish
+      lazygit
+      neovim
+      yazi
+      tmux
+      pi
+      git
       nix-daemon
       home
       font
