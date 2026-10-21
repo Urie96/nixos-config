@@ -20,7 +20,7 @@ jobs:
         uses: urie96/gitea-pr@v1
         with:
           token: ${{ secrets.BOT_TOKEN }}
-          head: dev
+          head: daily
           base: main
           title: Nightly merge dev into main
           # Created by the action if the repository has no such label yet.
