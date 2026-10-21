@@ -40,6 +40,17 @@
 
       package = inputs.neovim-nightly-overlay.packages.${pkgs.stdenv.hostPlatform.system}.neovim;
 
+      # 关掉 ruby provider host（默认是开着的）。原因不是「不需要 ruby」这么简单：
+      # 上游 nvim 模块里 `hosts.ruby` 的默认值
+      #   gemdir = "${pkgs.path}/pkgs/applications/editors/neovim/ruby_provider"
+      # 会把 `pkgs.path` 这个 path 值插值成字符串，nix 于是走 copyPathToStore，
+      # 把整份 nixpkgs 以 `<hash>-<nixpkgs store path basename>` 的名字再拷进 store
+      # （约 230 MB，且没有任何 GC root）。这份拷贝被 GC 掉之后，任何再走到这里的求值
+      # 都会以 `path '/nix/store/…-fkrgkr…-source' is not valid` 失败（CI 的 pr-check
+      # 就是这么挂的），同时这份拷贝还会经 bundlerEnv/gemfile-and-lockfile 进入 neovim
+      # 包装产物的构建依赖。关掉之后这条路径根本不会被求值到。
+      hosts.ruby.nvim-host.enable = false;
+
       specs.general = with vimPlugins; [
         snacks-nvim
         mini-nvim
