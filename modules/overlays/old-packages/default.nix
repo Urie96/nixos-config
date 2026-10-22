@@ -14,7 +14,10 @@ let
   # （x86_64-linux / aarch64-linux / aarch64-darwin），否则求值会直接报错。
   pinnedPackages = [
     "todoman"
-    "yazi"
+    "khal"
+    # 上游 python3.14-diff-cover 10.5.1 的 HTML 对比测试失败（6 failed），
+    # 连带 sqlfluff 无法构建，导致 system-path 构建失败。等上游修好再放出来。
+    "sqlfluff"
   ];
 
   # 只替换这几个属性，pre/post 都取当前 nixpkgs 的对应包，
