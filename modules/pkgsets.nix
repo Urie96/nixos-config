@@ -265,8 +265,9 @@ in
           cliclick
 
           tinycast
-          arc
         ]);
+
+      homebrew.casks = [ "arc" ];
     };
 
   flake.sysModules.fullPkgs =

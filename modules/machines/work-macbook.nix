@@ -21,9 +21,7 @@
         gitea-runner-work
       ];
 
-      environment.systemPackages = with inputs'.nur-packages.packages; [
-        feishu
-      ];
+      homebrew.casks = [ "feishu" ];
 
       sops = {
         age.keyFile = "/Users/${config.system.primaryUser}/.config/sops/age/keys.txt";

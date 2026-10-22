@@ -1,3 +1,4 @@
+# gitea 查看镜像github仓库的token：sudo cat /var/lib/gitea/repositories/urie/nixos-config.git/config
 { self, ... }:
 {
   flake.nixosModules.gitea =
