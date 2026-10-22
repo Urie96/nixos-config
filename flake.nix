@@ -15,7 +15,7 @@
 
   inputs = {
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst";
-    # old-nixpkgs.url = "github:NixOS/nixpkgs/b3c092d3c36d91e2f61f3dfb39a159f180a56659";
+    old-nixpkgs.url = "https://releases.nixos.org/nixos/unstable/nixos-26.11pre1086391.151fa4e8ddfd/nixexprs.tar.zst";
 
     nix-on-droid.url = "github:Urie96/nix-on-droid/testing";
     nix-on-droid.inputs.nixpkgs.follows = "nixpkgs";
@@ -149,7 +149,14 @@
       flake.sysModules = builtins.mapAttrs (
         _: v:
         { pkgs, ... }:
-        { imports = [ (v.install { _class = "nixos"; inherit pkgs; }) ]; }
+        {
+          imports = [
+            (v.install {
+              _class = "nixos";
+              inherit pkgs;
+            })
+          ];
+        }
       ) self.wrappers;
 
       # nix-on-droid 的 evalModules 用 class = "nixOnDroid"，不在 wlib 内置的
@@ -159,9 +166,19 @@
       # nix-on-droid 的 environment.packages（nix-on-droid 没有 environment.systemPackages）。
       flake.droidModules = builtins.mapAttrs (
         name: v:
-        { pkgs, config, lib, ... }:
         {
-          imports = [ (v.install { _class = "nixOnDroid"; inherit pkgs; }) ];
+          pkgs,
+          config,
+          lib,
+          ...
+        }:
+        {
+          imports = [
+            (v.install {
+              _class = "nixOnDroid";
+              inherit pkgs;
+            })
+          ];
           environment.packages = lib.mkIf config.wrappers.${name}.enable [
             config.wrappers.${name}.wrapper
           ];
@@ -175,7 +192,10 @@
             allowUnfree = true;
             android_sdk.accept_license = true; # android-emulator 需要
           };
-          overlays = [ self.overlays.rime-ice ];
+          overlays = [
+            self.overlays.rime-ice
+            self.overlays.old-packages
+          ];
         };
       };
     };

@@ -20,20 +20,16 @@
 
       environment.systemPackages = ([
         inputs'.clan-core.packages.default
-      ])
-      ++ (with inputs'.nur-packages.packages; [
-        telegram
-        wechat
-        bambu-studio
-        feishu
-        balenaetcher
-        neteasemusic
       ]);
 
       clan.core.networking.targetHost = "root@192.168.2.2";
 
       homebrew.casks = [
         "calibre"
+        "wechat"
+        "bambu-studio"
+        "feishu"
+        "neteasemusic"
       ];
       system.stateVersion = 5;
 
