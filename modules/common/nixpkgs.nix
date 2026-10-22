@@ -7,7 +7,12 @@ let
         android_sdk.accept_license = true;
       };
 
-      overlays = [ self.overlays.rime-ice ];
+      # 一批固定到 old-nixpkgs 的包（todoman、yazi 等），
+      # 名单见 modules/overlays/old-packages。
+      overlays = [
+        self.overlays.rime-ice
+        self.overlays.old-packages
+      ];
     };
   };
 in
