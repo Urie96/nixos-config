@@ -1,13 +1,11 @@
 name: "Build and populate cache"
+
 on:
   push:
     branches:
       - main
       - master
 
-# One run per push, but never cancel a running one: these jobs exist to warm the
-# runners' stores, and a cancelled build leaves the store only partly populated.
-# (Runs are queued, jobs inside a run still run in parallel.)
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: false
@@ -22,6 +20,9 @@ jobs:
           - aarch64-linux
           - aarch64-darwin
     runs-on: ${{ matrix.system }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
