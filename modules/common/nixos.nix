@@ -11,6 +11,14 @@
     }:
     let
       partsArgs = withSystem config.nixpkgs.hostPlatform.system (args: args);
+
+      # 证书用相对路径 + builtins.path 变成独立 store path，避免 "${self}/..."
+      # 把整个仓库源码拖进系统闭包（否则每次 commit 都会改变闭包 hash，
+      # 闭包里还多一份源码拷贝）。
+      mitmproxyCaCert = builtins.path {
+        path = ../wrappers/mitmproxy/mitmproxy-ca-cert.pem;
+        name = "mitmproxy-ca-cert.pem";
+      };
     in
     {
       imports = [
@@ -39,7 +47,7 @@
         doc.enable = false;
       };
 
-      security.pki.certificateFiles = [ "${self}/assets/mitmproxy-ca-cert.pem" ];
+      security.pki.certificateFiles = [ mitmproxyCaCert ];
 
       time.timeZone = "Asia/Shanghai";
 
