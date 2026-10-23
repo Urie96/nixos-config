@@ -10,6 +10,14 @@
       addonFiles = lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".py" name) (
         builtins.readDir ./addons
       );
+
+      # 证书是这里唯一从仓库里读的文件。用相对路径 + builtins.path 把它变成只跟
+      # 内容相关的 store path：只写 `./mitmproxy-ca-cert.pem` 会让 derivation 依赖
+      # 整个 flake 源码的 store path，任何 commit / 改动都换 hash，每次都重建。
+      caCert = builtins.path {
+        path = ./mitmproxy-ca-cert.pem;
+        name = "mitmproxy-ca-cert.pem";
+      };
     in
     {
       imports = [
@@ -21,17 +29,17 @@
       # confdir = ".mitmproxy";
 
       # CA 私钥放在 sops 加密的 ./secrets.yaml 里（age recipient 见文件末尾），
-      # 启动时渲染到 tmpfs；公开证书 assets/mitmproxy-ca-cert.pem 直接进 store。
+      # 启动时渲染到 tmpfs；公开证书 ./mitmproxy-ca-cert.pem 直接进 store。
       # 模板把「私钥占位符 + 公开证书」拼成 mitmproxy 需要的 mitmproxy-ca.pem（私钥+证书）。
       sops.secretsFile = ./secrets.yaml;
       # 必须显式列出 key：自动解析要 eval 阶段跑 sops-render --list-keys，属 IFD，已移除。
       sops.keys = [ "mitmproxy_ca_key" ];
       sops.templates."mitmproxy-ca.pem".content =
-        config.sops.placeholder.mitmproxy_ca_key + builtins.readFile "${self}/assets/mitmproxy-ca-cert.pem";
+        config.sops.placeholder.mitmproxy_ca_key + builtins.readFile caCert;
 
       ca = {
         pemFile = config.sops.templates."mitmproxy-ca.pem".path;
-        certFile = "${self}/assets/mitmproxy-ca-cert.pem";
+        certFile = caCert;
       };
 
       # mitmproxy 全局 option（键名见 `mitmproxy --options`），写进 <confdir>/config.yaml。

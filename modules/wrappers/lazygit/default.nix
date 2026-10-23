@@ -8,6 +8,8 @@
     let
       lazygitAction = pkgs.writeShellApplication {
         name = "lazygit-action";
+        # curl 用于探测自建实例是 Gitea/Forgejo 还是 GitLab
+        runtimeInputs = [ pkgs.curl ];
         text = builtins.readFile ./lazygit-action.sh;
       };
     in

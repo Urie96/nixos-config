@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: pr-check-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   check:
