@@ -28,8 +28,13 @@ jobs:
         run: nix flake check --no-build
 
   build:
-    # 不写 needs: check —— eval 挂了之后 `nix build` 也会在求值阶段几秒内跟着挂，
-    # 省不下多少时间，反而让 job 因为 needs 失败被 skip、status 消失。
+    # eval 是便宜的一档（几十秒），先让它过再叫醒三块 runner：eval 坏的时候不必把
+    # RK3588 / mac-mini 都拉起来做一次注定失败的求值。代价是成功的 PR 多等约 1 分钟。
+    #
+    # check 红时这三个 job 会被 skip，status 是 `skipped` 而不是 `failure`。结果一样是
+    # PR 合不了（check 本身就是 required 且已红），不会死锁；修好重新 push 后全套
+    # status 会重新产生。
+    needs: check
     strategy:
       fail-fast: false
       matrix:

@@ -1,7 +1,7 @@
 {
-  "$upstream": "https://github.com/hasit/pi-community-themes/raw/refs/heads/main/themes/catppuccin-mocha.json",
-  "$schema": "https://raw.githubusercontent.com/badlogic/pi-mono/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "$schema": "https://pi.dev/schemas/theme.schema.json",
   "name": "catppuccin-mocha",
+  "appearance": "dark",
   "vars": {
     "bg": "#1e1e2e",
     "panel": "#181825",
