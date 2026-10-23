@@ -9,8 +9,6 @@ on:
     branches:
       - main
 
-# A new push supersedes the previous run: there is no point evaluating a tree
-# that is already stale.
 concurrency:
   group: pr-check-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -28,3 +26,28 @@ jobs:
 
       - name: Check
         run: nix flake check --no-build
+
+  build:
+    # 不写 needs: check —— eval 挂了之后 `nix build` 也会在求值阶段几秒内跟着挂，
+    # 省不下多少时间，反而让 job 因为 needs 失败被 skip、status 消失。
+    strategy:
+      fail-fast: false
+      matrix:
+        system:
+          - x86_64-linux
+          - aarch64-linux
+          - aarch64-darwin
+    runs-on: ${{ matrix.system }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build (${{ matrix.system }})
+        run: |
+          set -euo pipefail
+          nix build --keep-going -o result .#ci.${{ matrix.system }}.all
+          echo "### ${{ matrix.system }} closure size"
+          nix path-info -Sh ./result
