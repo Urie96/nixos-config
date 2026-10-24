@@ -45,10 +45,11 @@
         fullPkgs
       ];
 
-      home-manager.users.${config.system.primaryUser} = self.homeModules.full;
-
       home-manager.users.${config.system.primaryUser} = {
-        imports = [ self.homeModules.zen-browser ];
+        imports = with self.homeModules; [
+          full
+          zen-browser
+        ];
       };
     };
 

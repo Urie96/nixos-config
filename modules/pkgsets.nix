@@ -267,7 +267,7 @@ in
           tinycast
         ]);
 
-      homebrew.casks = [ "arc" ];
+      # homebrew.casks = [ "arc" ];
     };
 
   flake.sysModules.fullPkgs =
