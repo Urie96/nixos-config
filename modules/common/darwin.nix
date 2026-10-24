@@ -64,8 +64,7 @@
           extraActivation.text =
             let
               user-extra = pkgs.writeShellScript "user-extra" ''
-                # chflags nohidden ~/Library # Show the ~/Library folder
-                ${pkgs.defaultbrowser}/bin/defaultbrowser browser # set arc as default browser
+                ${pkgs.defaultbrowser}/bin/defaultbrowser zen || true # set zen as default browser
 
                 # activateSettings -u will reload the settings from the database and apply them to the current session,
                 # so we do not need to logout and login again to make the changes take effect.

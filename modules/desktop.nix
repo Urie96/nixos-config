@@ -31,7 +31,7 @@
 
         chromium
         ferdium
-        inputs'.zen-browser.packages.default
+        # inputs'.zen-browser.packages.default
         mpv
 
         pciutils
