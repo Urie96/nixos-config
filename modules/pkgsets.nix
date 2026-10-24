@@ -24,7 +24,6 @@ let
       gzip
       gawk
       pkg-config
-      devenv
       file
       proxychains-ng
       python3
@@ -267,7 +266,7 @@ in
           tinycast
         ]);
 
-      homebrew.casks = [ "arc" ];
+      # homebrew.casks = [ "arc" ];
     };
 
   flake.sysModules.fullPkgs =

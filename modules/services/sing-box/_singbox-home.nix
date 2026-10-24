@@ -219,6 +219,7 @@
                       # "cache.nixos.org"
                       "ddns.oray.com"
                       "https://ip.3322.net"
+                      "addons.mozilla.org"
                     ];
                   }
                 ];

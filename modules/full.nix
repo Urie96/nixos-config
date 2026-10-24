@@ -45,7 +45,12 @@
         fullPkgs
       ];
 
-      home-manager.users.${config.system.primaryUser} = self.homeModules.full;
+      home-manager.users.${config.system.primaryUser} = {
+        imports = with self.homeModules; [
+          full
+          zen-browser
+        ];
+      };
     };
 
   flake.homeModules.full = {

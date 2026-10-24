@@ -1,0 +1,18 @@
+{
+  "immersive-translate": {
+    "@reference": "https://git.sr.ht/~rycee/nur-expressions/blob/master/pkgs/firefox-addons/generated-firefox-addons.nix",
+    "id": "{5efceaa7-f3a2-4e59-a54b-85319448e305}",
+    "url": "https://addons.mozilla.org/firefox/downloads/file/5051983/immersive_translate-1.33.3.xpi",
+    "hash": "sha256-C94gRk+/6VOpHDBDJktu0GabUP/5+6SQJN1bZGsePVE="
+  },
+  "bitwarden": {
+    "id": "{446900e4-71c2-419f-a6a7-df9c091e268b}",
+    "url": "https://addons.mozilla.org/firefox/downloads/file/5076543/bitwarden_password_manager-2026.9.3.xpi",
+    "hash": "sha256-XdbvpdIo2+rHoMaog/lReH3GbleYUyLOVJIQsN+NBUw="
+  },
+  "vimium": {
+    "id": "{d7742d87-e61d-4b78-b8a1-b469842139fa}",
+    "url": "https://addons.mozilla.org/firefox/downloads/file/4717567/vimium_ff-2.4.2.xpi",
+    "hash": "sha256-Ex4qZ1gOeukSWrGXgRWeYUCfrEe0Qfwngqq3Y5bq0ZY="
+  }
+}

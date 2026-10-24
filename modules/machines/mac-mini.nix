@@ -6,7 +6,12 @@
   };
 
   clan.machines.mac-mini =
-    { inputs', pkgs, ... }:
+    {
+      config,
+      inputs',
+      pkgs,
+      ...
+    }:
     {
       imports = with self.darwinModules; [
         full
@@ -29,7 +34,7 @@
         "wechat"
         "bambu-studio"
         "feishu"
-        "neteasemusic"
+        # "neteasemusic"
       ];
       system.stateVersion = 5;
 
