@@ -24,7 +24,6 @@ let
       gzip
       gawk
       pkg-config
-      devenv
       file
       proxychains-ng
       python3

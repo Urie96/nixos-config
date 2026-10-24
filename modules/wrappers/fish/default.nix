@@ -27,6 +27,21 @@
         map (name: builtins.readFile ./conf.d/${name}) names;
     in
     {
+      # direnv + nix-direnv 由 wrapper 自己提供（DIRENV_CONFIG 指向 wrapper 生成的
+      # direnvrc），因此不用在 NixOS/darwin 上开 programs.direnv，
+      # nixos / darwin / system-manager / nix-on-droid 行为一致。
+      direnv = {
+        enable = true;
+        nix-direnv.enable = true;
+        # 在 `nix shell` / `nix develop` 里不加载 direnv，避免 .envrc 把
+        # 手动进入的 nix shell 环境顶掉。
+        loadInNixShell = false;
+      };
+
+      # devenv 的 fish hook（./devenv.fish，带 exit / cd 回来的去重补丁）。
+      # devenv 本体也由这里提供（wrapper 的 runtime PATH），不在 pkgsets.nix 里重复列。
+      devenv.enable = true;
+
       flags."--no-config" = false;
 
       shellInit = ''
@@ -63,10 +78,6 @@
           ''
             if command -q zoxide
                 zoxide init fish | source
-            end
-
-            if command -q devenv
-                source ${./devenv.fish}
             end
 
             fish_config theme choose catppuccin-mocha --color-theme=dark
