@@ -137,6 +137,46 @@
           "zen.tabs.show-newtab-vertical" = false; # 在标签页列表中显示新建按钮
           "services.sync.engine.spaces" = true; # Sync your sidebar across devices
           "zen.spaces-sync.normal-tabs" = true; # Include unpinned tabs
+          "zen.mods.auto-update" = false; # 启动时自动更新已安装的模组
+        };
+
+        # 搜索引擎。HM 把这里渲染成 <profile>/search.json.mozlz4（mozlz4 = magic +
+        # 4 字节长度 + LZ4 block），也就是浏览器自己维护引擎列表的那份缓存，取代它。
+        # 代价：文件是指向 /nix/store 的只读软链，浏览器里改搜索设置（增删引擎、
+        # 换默认）不会落盘，下次启动仍是这里声明的状态。
+        #
+        # 版本号不用管：HM 写 version = 12，Zen 1.23 的 SearchUtils.SETTINGS_VERSION
+        # 是 14，读的时候会走 #migrateTo13/#migrateTo14（把 _isAppProvided 改名成
+        # _isConfigEngine），不会被判 corrupt。
+        search = {
+          # Firefox 写入设置时会替换掉这个软链，force 让每次 switch 重新链接回来。
+          force = true;
+
+          # Zen 自带的 config 引擎（google / 百度 / 维基 …）不需要在这里重写定义，
+          # 它们仍由 search config 提供；列在 order 里只是固定下拉列表顺序。
+          order = [
+            "google"
+            "github"
+            "baidu"
+            "wikipedia-zh-CN"
+            "bing"
+            "ddg"
+            "perplexity"
+          ];
+
+          engines = {
+            github = {
+              name = "GitHub";
+              urls = [
+                {
+                  template = "https://github.com/search?q={searchTerms}&type=repositories";
+                }
+              ];
+              # 地址栏的 @github。Firefox 把它存在 _metaData.alias（SearchEngine.alias），
+              # 不是 _definedAliases —— 后者只承接 WebExtension manifest 里的 keyword。
+              metaData.alias = "@github";
+            };
+          };
         };
       };
     };

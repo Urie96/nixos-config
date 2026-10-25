@@ -96,7 +96,7 @@ jobs:
       # status turns success, so scheduling it before any check has run is fine.
       - name: Open pull request and schedule auto-merge
         if: steps.bump.outputs.changed == 'true'
-        uses: urie96/gitea-pr
+        uses: urie96/gitea-pr@v1
         with:
           token: ${{ secrets.BOT_TOKEN }}
           head: update-flake-inputs
