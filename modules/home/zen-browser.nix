@@ -127,8 +127,17 @@
         # 只有一个 profile，id 固定 0（编号必须唯一且稳定）。
         id = 0;
 
-        # 包由 flake/HM 提供、浏览器自更新已禁用，启动时不必再问是否设为默认。
-        settings."browser.shell.checkDefaultBrowser" = false;
+        settings = {
+          "browser.shell.checkDefaultBrowser" = false;
+          "intl.locale.requested" = "zh-CN,en-US"; # 浏览器语言
+          "intl.accept_languages" = "zh-CN,zh,en-US,en"; # 网站语言
+          "intl.regional_prefs.use_os_locales" = true; # 根据您操作系统的“中文 (Hans, 中国大陆)”首选项设置日期、时间、数字格式和单位制。
+          "browser.translations.neverTranslateLanguages" = "zh-Hans";
+          "browser.translations.automaticallyPopup" = false; # 询问是否翻译整页
+          "zen.tabs.show-newtab-vertical" = false; # 在标签页列表中显示新建按钮
+          "services.sync.engine.spaces" = true; # Sync your sidebar across devices
+          "zen.spaces-sync.normal-tabs" = true; # Include unpinned tabs
+        };
       };
     };
   };

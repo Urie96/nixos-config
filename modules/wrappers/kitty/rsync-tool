@@ -90,6 +90,33 @@ ssh() {
   command ssh -t $ssh_port "$HOST" "$@"
 }
 
+# push 时远端是 receiver，rsync >= 3.5.0 才认识 --insecure-links：
+# 3.5.0 把非 daemon receiver 的目标目录 chdir 改成「逐段
+# openat(O_RDONLY|O_DIRECTORY) 再 fchdir」的 ownership walk
+# （CVE-2026-53796），于是每级父目录都需要可读。Android 的 /data、
+# /data/data 是 0771（只有 x 没有 r），会直接 EACCES 并报
+# `change_dir#1 ... Permission denied`。该选项是 local-only、不会被
+# 转发给远端，只能通过 --rsync-path 让远端进程自己带上；老版本 rsync
+# 不认识这个 flag，所以先探一下版本，< 3.5.0 时保持原样。
+remote_supports_insecure_links() {
+  local out version major minor
+  local ssh_port=()
+  if [ -n "$PORT" ]; then
+    ssh_port=(-p "$PORT")
+  fi
+  # 这里不能走上面的 ssh()：带 -t 会让远端跑交互式 shell，输出不干净
+  out=$(command ssh "${ssh_port[@]}" "$HOST" 'rsync --version 2>/dev/null | head -n1') || return 1
+  version=${out#*version }         # "3.5.0  protocol version 32"
+  version=${version%%[!0-9.]*}     # "3.5.0"
+  major=${version%%.*}
+  minor=${version#*.}
+  minor=${minor%%.*}
+  case "${major}${minor}" in
+  '' | *[!0-9]*) return 1 ;;
+  esac
+  [ "$major" -gt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -ge 5 ]; }
+}
+
 pull() {
   if [[ "$#" -lt 2 ]]; then
     die "pull need at least 2 args, but got $#"
@@ -115,11 +142,15 @@ push() {
   done
 
   local remote_dst="${HOST}:$1"
+  local opt=()
+  if remote_supports_insecure_links; then
+    opt=(--rsync-path 'rsync --insecure-links')
+  fi
 
   if [[ "${local_src[0]}" == /* ]]; then
-    rsync "${local_src[@]}" "$remote_dst"
+    rsync "${opt[@]}" "${local_src[@]}" "$remote_dst"
   else
-    rsync --relative "${local_src[@]}" "$remote_dst"
+    rsync --relative "${opt[@]}" "${local_src[@]}" "$remote_dst"
   fi
 }
 
