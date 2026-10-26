@@ -22,6 +22,8 @@
         # 这台机器也是构建机（x86 leg 的 runner），构建的包也在构建时签名
         nix-signing
         gitea-runner-home
+        # aarch64-linux 派给 orangepi5plus，aarch64-darwin 派给 mac-mini
+        nix-builders-client
       ];
 
       my.mainUser.name = "urie";
@@ -53,20 +55,6 @@
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;
       system.stateVersion = "24.11";
-
-      ###### Qemu编译arm  ######
-      # Register binfmt_misc handlers for aarch64 on x86_64
-      # This allows running aarch64 binaries natively on x86_64
-      # boot.binfmt.emulatedSystems = [
-      #   "aarch64-linux"
-      # ];
-      #
-      # # Add aarch64-linux as an extra platform for building
-      # nix.settings = {
-      #   extra-platforms = [
-      #     "aarch64-linux"
-      #   ];
-      # };
 
       srvos.detect-hostname-change.enable = false;
     };

@@ -19,6 +19,8 @@
         # 本机构建的包自动带缓存签名（harmonia 与客户端都认这把 key）：
         # 推到 home-server 的缓存时才能过 require-sigs 检查。
         nix-signing
+        # 作为 home-server 的 aarch64-darwin 远程 builder
+        nix-builders-builder
       ];
 
       system.primaryUser = "urie";
