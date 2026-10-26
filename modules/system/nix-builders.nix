@@ -86,17 +86,28 @@ in
 
   flake.darwinModules.nix-builders-builder =
     { config, lib, ... }:
+    let
+      # uid/gid 必须挑本机目录服务里没被占用的：macOS 的 PrimaryGroupID / UniqueID
+      # 是唯一索引，撞了会报 eDSRecordAlreadyExists（而且是先建出记录、再赋值失败，
+      # 留下一个没有 gid 的空 group 记录，下次激活卡在选择分支上）。踩过的坑：
+      # 400 已被 com.apple.access_remote_ae 占用。_nixbld* 用 350-382，系统 daemon
+      # 账号在 3xx 里持续增加，所以和 _gitea-runner(536) 一样挑 5xx 的空号。
+      managedId = 550;
+    in
     {
       imports = [ accessKey ];
 
-      # nix-darwin 只会创建 knownUsers / knownGroups 里列出的账号；uid/gid 挑一个
-      # 本机没被占用的（_nixbld* 是 350-382，urie 是 501）。
+      # nix-darwin 只会创建 knownUsers / knownGroups 里列出的账号。
       users.knownGroups = [ builderUser ];
       users.knownUsers = [ builderUser ];
-      users.groups.${builderUser} = { gid = 400; };
+      users.groups.${builderUser} = {
+        gid = managedId;
+        description = "Nix remote builder service group";
+      };
       users.users.${builderUser} = {
-        uid = 400;
-        gid = 400;
+        uid = managedId;
+        gid = managedId;
+        description = "Nix remote builder service user";
         home = "/var/empty";
         # 默认 shell 是 /usr/bin/false，那样 forced command 根本不会被执行，
         # 表现成「Permission denied」而不是能看懂的报错，所以必须显式给 bash。
