@@ -1,4 +1,4 @@
-name: "Build and populate cache"
+name: "Build"
 
 on:
   push:
@@ -12,48 +12,27 @@ concurrency:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        system:
-          - x86_64-linux
-          - aarch64-linux
-          - aarch64-darwin
-    runs-on: ${{ matrix.system }}
-    timeout-minutes: 120
+    # 只在本机（home-server）跑：`.#ci.all` 含所有架构的配置，aarch64 的部分由
+    # nix.buildMachines 派发到 orangepi5plus / macmini。
+    runs-on: x86_64-linux
+    timeout-minutes: 180
     permissions:
       contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build (${{ matrix.system }})
+      - name: Build
         run: |
           set -euo pipefail
-          nix build --keep-going -o result .#ci.${{ matrix.system }}.all
-          echo "### ${{ matrix.system }} closure size"
-          nix path-info -Sh ./result
-
-      # 私钥来自仓库 secret CACHE_PUSH_SSH_KEY（对应 cache-push@home.lubui.com 的
-      # authorized_keys）。写入临时文件后通过 NIX_SSHOPTS 传给 nix 的 ssh transport。
-      # x86_64-linux leg 不推：这台机器自己就能原生构建，推过去没收益。
-      - name: Push closure to cache (${{ matrix.system }})
-        if: matrix.system != 'x86_64-linux'
-        env:
-          CACHE_PUSH_SSH_KEY: ${{ secrets.CACHE_PUSH_SSH_KEY }}
-        run: |
-          set -euo pipefail
-          if [ -z "${CACHE_PUSH_SSH_KEY:-}" ]; then
-            echo "CACHE_PUSH_SSH_KEY is empty, refusing to continue" >&2
-            exit 1
-          fi
-          umask 077
-          mkdir -p "$HOME/.ssh"
-          key="${RUNNER_TEMP:-/tmp}/cache_push_key"
-          printf '%s\n' "$CACHE_PUSH_SSH_KEY" > "$key"
-          trap 'rm -f "$key"' EXIT
-          unset CACHE_PUSH_SSH_KEY
-          # 首次连接先学习主机公钥；scan 失败再退回 accept-new，避免 keyscan 抖动导致失败
-          ssh-keyscan home.lubui.com > "$HOME/.ssh/known_hosts" 2>/dev/null || true
-          export NIX_SSHOPTS="-i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-          nix copy --to ssh-ng://cache-push@home.lubui.com ./result
+          out=$(nix build --keep-going --no-link --print-out-paths .#ci.all)
+          echo "### total closure size (all machines, all systems)"
+          nix path-info -Sh "$out"
+          echo
+          echo "### closure size per configuration"
+          # `$out` 是 linkFarm：每个条目是指向某台机器 toplevel 的符号链接，
+          # 要 readlink -f 拿回真正的 store path 才能查闭包大小。
+          for path in "$out"/*; do
+            size=$(nix path-info -Sh "$(readlink -f "$path")" | cut -f2 | sed -E 's/^[[:space:]]+//')
+            printf '%-20s %s\n' "$(basename "$path")" "$size"
+          done
