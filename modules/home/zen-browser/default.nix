@@ -149,6 +149,7 @@
             "services.sync.engine.spaces" = true; # Sync your sidebar across devices
             "zen.spaces-sync.normal-tabs" = true; # Include unpinned tabs
             "zen.mods.auto-update" = false; # 启动时自动更新已安装的模组
+            "extensions.webextensions.ExtensionStorageIDB.enabled" = false; # 插件配置从indexdb回退到json文件
           };
 
           # 搜索引擎。HM 把这里渲染成 <profile>/search.json.mozlz4（mozlz4 = magic +
@@ -175,20 +176,40 @@
               "perplexity"
             ];
 
-            engines = {
-              github = {
-                name = "GitHub";
-                urls = [ { template = "https://github.com/search?q=%s&type=repositories"; } ];
-                metaData.alias = [ "@github" ];
+            engines =
+              let
+                nixSnowflakeIcon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
+              in
+              {
+                "GitHub" = {
+                  urls = [ { template = "https://github.com/search?q={searchTerms}&type=repositories"; } ];
+                  definedAliases = [ "github" ];
+                  icon = "https://github.githubassets.com/favicons/favicon.svg";
+                };
+
+                "Nix Options" = {
+                  urls = [ { template = "https://search.nixos.org/options?channel=unstable&query={searchTerms}"; } ];
+                  definedAliases = [ "nixos" ];
+                  icon = nixSnowflakeIcon;
+                };
+
+                "Nix Packages" = {
+                  urls = [ { template = "https://search.nixos.org/packages?channel=unstable&query={searchTerms}"; } ];
+                  definedAliases = [ "pkgs" ];
+                  icon = nixSnowflakeIcon;
+                };
+
+                "ChatGPT" = {
+                  urls = [ { template = "https://chat.openai.com?q={searchTerms}"; } ];
+                  icon = "https://chatgpt.com/cdn/assets/favicon-eex17e9e.ico";
+                  definedAliases = [
+                    "@gpt"
+                    "@chatgpt"
+                  ];
+                };
+
+                bing.metaData.hidden = "true";
               };
-              nixos = {
-                name = "NixOS";
-                urls = [
-                  { template = "https://search.nixos.org/options?channel=unstable&query=%s&type=options"; }
-                ];
-                metaData.alias = [ "@nixos" ];
-              };
-            };
           };
         };
       };
