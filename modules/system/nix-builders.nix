@@ -12,8 +12,20 @@ let
   privateFile = "${keyName}.key";
   publicFile = "${keyName}.pub";
 
+  # builder 上的专用账号：只用来接 ssh-ng store 协议，不给 shell 之外的任何东西
+  # （NixOS 上是 isSystemUser，darwin 上是 hidden + /bin/bash）。
+  #
+  # 不用 urie 的原因：那样 builder 访问权就跟人的账号绑在一起 —— 轮换 urie 的
+  # 公钥、改它的 groups/shell、或者干脆把 urie 从 wheel 里挪走，都会连带影响构建；
+  # 反过来看 daemon 日志时也分不清「远程构建」和「我自己登录」。
+  # 注意这换不来更小的 store 权限：builder 侧这个账号仍然必须在
+  # nix.settings.trusted-users 里（否则 ssh-ng 没法把输入路径写进对方 store），
+  # 所以收益是解耦 + 可审计，不是降权。钥匙本身的限制仍然是下面的 forced command。
+  builderUser = "nix-builder";
+
   # builder 访问 key。share = true：三台机器共用同一把 —— orangepi5plus / mac-mini
-  # 把它写进 urie 的 authorized_keys，home-server 的 nix daemon（以 root 跑）用它登录。
+  # 把它写进 nix-builder 的 authorized_keys，home-server 的 nix daemon（以 root 跑）
+  # 用它登录。
   #
   # 为什么必须是 root 有 key：`nix.buildMachines` 的 ssh 是由本机 nix daemon 发起的，
   # 不是 urie 的 shell，所以 `~/.ssh/id_ed25519` 用不上（root 也读不了别人的私钥，
@@ -48,16 +60,28 @@ let
 in
 {
   # ── builder 侧 ────────────────────────────────────────────────────────
-  # 用户沿用 urie（两台机器上它都已在 nix.settings.trusted-users 里：NixOS 走
-  # @wheel，mac-mini 走 primaryUser），不额外建用户。
   flake.nixosModules.nix-builders-builder =
-    { config, lib, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     {
       imports = [ accessKey ];
 
-      users.users.${config.my.mainUser.name}.openssh.authorizedKeys.keys = [
-        (restrictedKey lib config)
-      ];
+      # 组不能是 nixbld（daemon 会拒），shell 也不能是 nologin（sshd 用用户 shell
+      # 执行 authorized_keys 里的 forced command），和 cache-push 的约束一样。
+      users.groups.${builderUser} = { };
+      users.users.${builderUser} = {
+        isSystemUser = true;
+        group = builderUser;
+        shell = pkgs.bash;
+        openssh.authorizedKeys.keys = [ (restrictedKey lib config) ];
+      };
+
+      # ssh-ng 会把输入的闭包写进本机 store，非 trusted 用户会被签名检查拦下来。
+      nix.settings.trusted-users = [ builderUser ];
     };
 
   flake.darwinModules.nix-builders-builder =
@@ -65,11 +89,25 @@ in
     {
       imports = [ accessKey ];
 
-      # nix-darwin 会把这些 key 落到 /etc/ssh/nix_authorized_keys.d/<user>，
-      # 通过 sshd_config.d 里的 AuthorizedKeysCommand 生效，不动 ~/.ssh/authorized_keys。
-      users.users.${config.system.primaryUser}.openssh.authorizedKeys.keys = [
-        (restrictedKey lib config)
-      ];
+      # nix-darwin 只会创建 knownUsers / knownGroups 里列出的账号；uid/gid 挑一个
+      # 本机没被占用的（_nixbld* 是 350-382，urie 是 501）。
+      users.knownGroups = [ builderUser ];
+      users.knownUsers = [ builderUser ];
+      users.groups.${builderUser} = { gid = 400; };
+      users.users.${builderUser} = {
+        uid = 400;
+        gid = 400;
+        home = "/var/empty";
+        # 默认 shell 是 /usr/bin/false，那样 forced command 根本不会被执行，
+        # 表现成「Permission denied」而不是能看懂的报错，所以必须显式给 bash。
+        shell = "/bin/bash";
+        isHidden = true;
+        # nix-darwin 会把这些 key 落到 /etc/ssh/nix_authorized_keys.d/<user>，
+        # 通过 sshd_config.d 里的 AuthorizedKeysCommand 生效，不动 ~/.ssh/authorized_keys。
+        openssh.authorizedKeys.keys = [ (restrictedKey lib config) ];
+      };
+
+      nix.settings.trusted-users = [ builderUser ];
     };
 
   # ── client 侧（home-server）───────────────────────────────────────────
@@ -89,7 +127,7 @@ in
         {
           # RK3588，8 核 / 7G。原生 aarch64-linux，替代之前注释掉的 qemu binfmt。
           hostName = "orangepi5plus.lan";
-          sshUser = "urie";
+          sshUser = builderUser;
           inherit sshKey;
           protocol = "ssh-ng";
           systems = [ "aarch64-linux" ];
@@ -108,7 +146,7 @@ in
           # M 系列，8 核 / 8G。只能原生编 aarch64-darwin；aarch64-linux 要靠
           # nix.linux-builder 的 VM，而且那个 VM 只监听 127.0.0.1:31022，跨机器用不了。
           hostName = "macmini.lan";
-          sshUser = "urie";
+          sshUser = builderUser;
           inherit sshKey;
           protocol = "ssh-ng";
           systems = [ "aarch64-darwin" ];
