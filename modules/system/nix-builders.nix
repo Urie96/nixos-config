@@ -12,20 +12,22 @@ let
   privateFile = "${keyName}.key";
   publicFile = "${keyName}.pub";
 
-  # builder 上的专用账号：只用来接 ssh-ng store 协议，不给 shell 之外的任何东西
-  # （NixOS 上是 isSystemUser，darwin 上是 hidden + /bin/bash）。
+  # builder 侧的 ssh 用户：直接用 root。
   #
-  # 不用 urie 的原因：那样 builder 访问权就跟人的账号绑在一起 —— 轮换 urie 的
-  # 公钥、改它的 groups/shell、或者干脆把 urie 从 wheel 里挪走，都会连带影响构建；
-  # 反过来看 daemon 日志时也分不清「远程构建」和「我自己登录」。
-  # 注意这换不来更小的 store 权限：builder 侧这个账号仍然必须在
-  # nix.settings.trusted-users 里（否则 ssh-ng 没法把输入路径写进对方 store），
-  # 所以收益是解耦 + 可审计，不是降权。钥匙本身的限制仍然是下面的 forced command。
-  builderUser = "nix-builder";
+  # 不自己建账号的理由：builder 侧这个账号无论如何都得在 nix.settings.trusted-users
+  # 里（ssh-ng 要把输入闭包写进对方 store），所以换账号并不会降权；真正的闸门是
+  # 下面 authorized_keys 里的 restrict + forced command，跟账号是谁无关。而在 macOS
+  # 上建账号还要走 sysadminctl + 唯一的 uid/gid 分配（撞号就 eDSRecordAlreadyExists，
+  # 还会留下空记录把激活卡死），运维成本远高于收益。root 本来就在 trusted-users 里，
+  # clan 部署本来也是以 root 登录，所以只需要往 root 的 authorized_keys 里加一行。
+  #
+  # 代价说明：万一哪天这行 authorized_keys 的 `restrict,command=...` 被写坏或删掉，
+  # 这把 key 就从「只能说 store 协议」变成「root 可登录」，比专用账号的同类失误严重。
+  # 另外 builder 日志里远程构建会显示成 root，和 clan 部署混在一起。
+  builderUser = "root";
 
   # builder 访问 key。share = true：三台机器共用同一把 —— orangepi5plus / mac-mini
-  # 把它写进 nix-builder 的 authorized_keys，home-server 的 nix daemon（以 root 跑）
-  # 用它登录。
+  # 把它写进 root 的 authorized_keys，home-server 的 nix daemon（以 root 跑）用它登录。
   #
   # 为什么必须是 root 有 key：`nix.buildMachines` 的 ssh 是由本机 nix daemon 发起的，
   # 不是 urie 的 shell，所以 `~/.ssh/id_ed25519` 用不上（root 也读不了别人的私钥，
@@ -61,64 +63,31 @@ in
 {
   # ── builder 侧 ────────────────────────────────────────────────────────
   flake.nixosModules.nix-builders-builder =
-    {
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
+    { config, lib, ... }:
     {
       imports = [ accessKey ];
 
-      # 组不能是 nixbld（daemon 会拒），shell 也不能是 nologin（sshd 用用户 shell
-      # 执行 authorized_keys 里的 forced command），和 cache-push 的约束一样。
-      users.groups.${builderUser} = { };
-      users.users.${builderUser} = {
-        isSystemUser = true;
-        group = builderUser;
-        shell = pkgs.bash;
-        openssh.authorizedKeys.keys = [ (restrictedKey lib config) ];
-      };
-
-      # ssh-ng 会把输入的闭包写进本机 store，非 trusted 用户会被签名检查拦下来。
-      nix.settings.trusted-users = [ builderUser ];
+      # clan 的 sshd 服务已经在维护 root 的 authorized_keys（inventory 里的
+      # roles.server.settings.authorizedKeys），这里是列表合并，不会覆盖它们。
+      users.users.root.openssh.authorizedKeys.keys = [ (restrictedKey lib config) ];
     };
 
   flake.darwinModules.nix-builders-builder =
     { config, lib, ... }:
-    let
-      # uid/gid 必须挑本机目录服务里没被占用的：macOS 的 PrimaryGroupID / UniqueID
-      # 是唯一索引，撞了会报 eDSRecordAlreadyExists（而且是先建出记录、再赋值失败，
-      # 留下一个没有 gid 的空 group 记录，下次激活卡在选择分支上）。踩过的坑：
-      # 400 已被 com.apple.access_remote_ae 占用。_nixbld* 用 350-382，系统 daemon
-      # 账号在 3xx 里持续增加，所以和 _gitea-runner(536) 一样挑 5xx 的空号。
-      managedId = 550;
-    in
     {
       imports = [ accessKey ];
 
-      # nix-darwin 只会创建 knownUsers / knownGroups 里列出的账号。
-      users.knownGroups = [ builderUser ];
-      users.knownUsers = [ builderUser ];
-      users.groups.${builderUser} = {
-        gid = managedId;
-        description = "Nix remote builder service group";
-      };
-      users.users.${builderUser} = {
-        uid = managedId;
-        gid = managedId;
-        description = "Nix remote builder service user";
-        home = "/var/empty";
-        # 默认 shell 是 /usr/bin/false，那样 forced command 根本不会被执行，
-        # 表现成「Permission denied」而不是能看懂的报错，所以必须显式给 bash。
-        shell = "/bin/bash";
-        isHidden = true;
-        # nix-darwin 会把这些 key 落到 /etc/ssh/nix_authorized_keys.d/<user>，
-        # 通过 sshd_config.d 里的 AuthorizedKeysCommand 生效，不动 ~/.ssh/authorized_keys。
+      # 不碰 sysadminctl / uid-gid 分配，只往 root 的 authorized_keys 里加一行：
+      # nix-darwin 会写到 /etc/ssh/nix_authorized_keys.d/root，由 sshd_config.d 里的
+      # AuthorizedKeysCommand 生效，不动 /var/root/.ssh/authorized_keys。
+      #
+      # 不要把它登记进 users.knownUsers：那样 nix-darwin 会当成本机管理账号去改它。
+      # uid/gid 只有在这条定义被其它模块 merge 时才是必填项，这里给 root 的 0/0。
+      users.users.root = {
+        uid = 0;
+        gid = 0;
         openssh.authorizedKeys.keys = [ (restrictedKey lib config) ];
       };
-
-      nix.settings.trusted-users = [ builderUser ];
     };
 
   # ── client 侧（home-server）───────────────────────────────────────────
