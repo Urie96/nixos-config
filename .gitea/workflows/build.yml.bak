@@ -1,0 +1,27 @@
+name: "Build"
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # 只在本机（home-server）跑：`nix run .#ci` 构建 `.#ci-all`（含所有架构的配置），
+    # aarch64 的部分由 nix.buildMachines 派发到 orangepi5plus / macmini。
+    runs-on: x86_64-linux
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 构建什么、打印什么都在 modules/ci.nix 里；这里只管调用。
+      - name: CI
+        run: nix run .#ci

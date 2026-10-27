@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 只在本机（home-server）跑 `nix build`：`.#ci.all` 含所有架构的配置，aarch64 的
-  # 部分由 nix.buildMachines 派发到 orangepi5plus / macmini。
+  # 只在本机（home-server）跑：`nix run .#ci` 构建 `.#ci-all`（含所有架构的配置），
+  # aarch64 的部分由 nix.buildMachines 派发到 orangepi5plus / macmini。
   #
   # job 名字保持 `check`：Gitea 分支保护里的 required status 是
   # "PR check / check (pull_request)"，改名会让新建的 PR 永远等不到这个 status。
@@ -29,17 +29,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build
-        run: |
-          set -euo pipefail
-          out=$(nix build --keep-going --no-link --print-out-paths .#ci.all)
-          echo "### total closure size (all machines, all systems)"
-          nix path-info -Sh "$out"
-          echo
-          echo "### closure size per configuration"
-          # `$out` 是 linkFarm：每个条目是指向某台机器 toplevel 的符号链接，
-          # 要 readlink -f 拿回真正的 store path 才能查闭包大小。
-          for path in "$out"/*; do
-            size=$(nix path-info -Sh "$(readlink -f "$path")" | cut -f2 | sed -E 's/^[[:space:]]+//')
-            printf '%-20s %s\n' "$(basename "$path")" "$size"
-          done
+      # 构建什么、打印什么都在 modules/ci.nix 里；这里只管调用。
+      - name: CI
+        run: nix run .#ci
