@@ -42,16 +42,29 @@ Config.now(function()
         or { 'clangd', '--background-index', '--clang-tidy' },
     },
     arduino_language_server = {
-      cmd = (function()
-        local cmd = {
-          'arduino-language-server',
-        }
-        if vim.env.ARDUINO_CLI_CONFIG then
-          table.insert(cmd, '--cli-config')
-          table.insert(cmd, vim.env.ARDUINO_CLI_CONFIG)
+      cmd = {
+        'arduino-language-server',
+      },
+      -- 默认只挂 filetype = 'arduino'（也就是 .ino）。Arduino 库自带的 .h/.cpp
+      -- 也必须交给它：只有 ALS 知道本次构建的编译数据库（它的 clangd 带
+      -- --compile-commands-dir），单独的 clangd 在 /nix/store 里找不到
+      -- compile_commands.json，库头文件里的 #include 全部解析失败，跳转/补全全废。
+      filetypes = { 'arduino', 'c', 'cpp' },
+      root_dir = function(bufnr, on_dir)
+        -- 库/core 源码在 /nix/store 里（不在任何 sketch 树内），向上找不到 sketch
+        -- 标记，这时才退回 cwd（在 sketch 目录里启动 nvim 时就是它）。普通 C++
+        -- 项目两者都匹配不到，返回 nil，ALS 就不会挂到那些 buffer 上。
+        local markers = { 'sketch.yaml', 'sketch.json', '*.ino' }
+        local name = vim.api.nvim_buf_get_name(bufnr)
+        local marker = vim.fs.find(markers, { upward = true, path = vim.fs.dirname(name) })[1]
+        if
+          not marker
+          and (name:match '^/nix/store/' or name:match '/%-arduino%-data/' or name:match '/Arduino/libraries/')
+        then
+          marker = vim.fs.find(markers, { upward = true, path = vim.fn.getcwd() })[1]
         end
-        return cmd
-      end)(),
+        if marker then on_dir(vim.fs.dirname(marker)) end
+      end,
     },
   }
 
