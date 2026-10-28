@@ -38,8 +38,59 @@ Config.now(function()
     yamlls = {},
     just = {},
     clangd = {
-      cmd = (os.getenv 'IDF_PATH') and { 'clangd', '--background-index', '--query-driver=**' }
-        or { 'clangd', '--background-index', '--clang-tidy' },
+      -- 不用 `cmd = function()`：0.13 起这个函数必须返回 `vim.lsp.rpc.Client`，返回参数表
+      -- 会被当成 rpc 客户端用（client.lua:607 attempt to call field 'request'）。
+      -- 相对路径按 clangd 的 cwd 解析，而 nvim 启动 clangd 时 cwd = root_dir（client.lua：
+      -- `cwd = config.cmd_cwd or config.root_dir`），所以 build 就是工程的构建目录；
+      -- 还没 build 过时这个路径无效，clangd 会自己退回默认查找，无害。
+      cmd = (os.getenv 'IDF_PATH') and {
+        'clangd',
+        '--background-index',
+        -- 和下面 arduino-language-server 是同一个坑的两半：ESP-IDF 自己的头文件在 /nix/store
+        -- 里，从它们的目录向上永远找不到 compile_commands.json，clangd 只能退回裸默认
+        -- （esp-clang 这个二进制的默认 target 甚至还是 riscv32），于是 nvs_flash.h -> nvs.h
+        -- -> esp_attr.h 这类 #include 全部解析失败，IDF 头文件里的 hover/补全也一并作废。
+        -- 强制喂一个 DB 之后，clangd 会用最近的工程条目给它们内插 flags
+        -- （含 components/*/include），再配合 devshell 里 clangd wrapper 的 --query-driver，
+        -- newlib/stdio.h 也能找到。
+        '--compile-commands-dir=build',
+      } or { 'clangd', '--background-index', '--clang-tidy' },
+      root_dir = function(bufnr, on_dir)
+        -- 上面那条 --compile-commands-dir 只对"会话"生效，而 clangd 判断一个文件用哪份
+        -- flags 是看这个文件自己的路径。所以 store 里的 IDF 源文件还得挂到工程会话上，
+        -- 否则 nvim 会为它们另起一个 root_dir = nil 的 clangd。
+        -- 注意不能直接用它自己的向上查找结果：IDF 每个组件目录下都有 CMakeLists.txt，
+        -- 会一路匹配到 components/<组件> 甚至 IDF 根目录，把会话挂到错误的地方。
+        local name = vim.api.nvim_buf_get_name(bufnr)
+        local markers = { '.clangd', 'compile_commands.json', 'compile_flags.txt', 'CMakeLists.txt', '.git' }
+        local idf = os.getenv 'IDF_PATH'
+        local is_idf_src = name:match '^/nix/store/' ~= nil
+          or (idf ~= nil and vim.fs.normalize(name):find(vim.fs.normalize(idf), 1, true) ~= nil)
+        local root
+        if is_idf_src then
+          root = vim.fs.root(vim.fn.getcwd(), markers)
+        else
+          root = vim.fs.root(bufnr, markers)
+        end
+        if root then on_dir(root) end
+      end,
+      handlers = {
+        -- 强制喂 DB 后，/nix/store 里的文件（IDF 源码、工具链 sysroot、第三方库）是拿原始
+        -- 编译命令解析的，而工程 .clangd 的 `CompileFlags.Remove: [-m*, -f*]` 只覆盖工程
+        -- 自己的文件，于是 clangd 会为 gcc 专属的 -mdisable-hardware-atomics /
+        -- -fstrict-volatile-bitfields / -fno-tree-switch-conversion 报 drv_unknown_argument，
+        -- 而且挂在“你正在看的那个 store 文件”的第 1 行上（打开 stdint.h 就红 stdint.h）。
+        -- 这些参数只对 gcc 驱动有意义，对分析无意义；只丢这一类码，其它诊断照常。
+        ['textDocument/publishDiagnostics'] = function(err, result, ctx)
+          if result and result.uri and vim.fs.normalize(vim.uri_to_fname(result.uri)):match '^/nix/store/' then
+            result.diagnostics = vim.tbl_filter(
+              function(d) return d.code ~= 'drv_unknown_argument' end,
+              result.diagnostics or {}
+            )
+          end
+          return vim.lsp.diagnostic.on_publish_diagnostics(err, result, ctx)
+        end,
+      },
     },
     arduino_language_server = {
       cmd = {
