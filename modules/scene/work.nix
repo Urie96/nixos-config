@@ -12,9 +12,11 @@ let
     };
 
     wrappers.pi = {
-      defaultModel = "deepseek-flash";
-      defaultProvider = "deepseek";
-      enabledModels = [ "ark/*" ];
+      settings = {
+        defaultModel = "deepseek-flash";
+        defaultProvider = "deepseek";
+        enabledModels = [ "ark/*" ];
+      };
       models.providers.ark = {
         api = "openai-responses";
         apiKey = "$ARK_API_KEY";
