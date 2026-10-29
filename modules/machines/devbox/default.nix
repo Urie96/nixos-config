@@ -37,6 +37,17 @@
               in
               {
                 my.mainUser.name = username;
+
+                # fish 交互式 shell 同样走这个代理。写在这里而不是 modules/wrappers/fish：
+                # `flake.wrappers.fish` 是所有机器共用的包，而 system config 里的
+                # `wrappers.fish` 是一个完整的 wrapper 子模块，features/fish.nix 又把
+                # 登录 shell 设成 config.wrappers.fish.wrapper，所以在机器模块里追加配置
+                # 只影响这台机器。
+                wrappers.fish.interactiveShellInit = ''
+                  set -gx http_proxy ${proxy}
+                  set -gx https_proxy ${proxy}
+                  set -gx no_proxy ${no_proxy}
+                '';
                 home-manager.users.${username}.programs.ssh.settings."code.byted.org" = {
                   IdentityFile = "~/.ssh/id_ed25519";
                   IdentitiesOnly = "yes";

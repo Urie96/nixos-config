@@ -13,8 +13,10 @@ let
 
     wrappers.pi = {
       settings = {
-        defaultModel = "deepseek-flash";
-        defaultProvider = "deepseek";
+        # scene 是「按机器用途覆盖 wrapper 默认值」的地方，wrapper 里那套
+        # deepseek/deepseek-flash 是通用默认，这里用 mkForce 让 work 场景赢。
+        defaultModel = lib.mkForce "ep-20261015193016-mtb6n";
+        defaultProvider = lib.mkForce "ark";
         enabledModels = [ "ark/*" ];
       };
       models.providers.ark = {
