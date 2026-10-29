@@ -14,45 +14,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 只在本机（home-server）跑：`nix run .#ci` 构建 `.#ci-all`（含所有架构的配置），
+  # aarch64 的部分由 nix.buildMachines 派发到 orangepi5plus / macmini。
+  #
+  # job 名字保持 `check`：Gitea 分支保护里的 required status 是
+  # "PR check / check (pull_request)"，改名会让新建的 PR 永远等不到这个 status。
   check:
     # Context reported to Gitea: "PR check / check (pull_request)".
     runs-on: x86_64-linux
-    timeout-minutes: 60
+    timeout-minutes: 180
     permissions:
       contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check
-        run: nix flake check --no-build
-
-  build:
-    # eval 是便宜的一档（几十秒），先让它过再叫醒三块 runner：eval 坏的时候不必把
-    # RK3588 / mac-mini 都拉起来做一次注定失败的求值。代价是成功的 PR 多等约 1 分钟。
-    #
-    # check 红时这三个 job 会被 skip，status 是 `skipped` 而不是 `failure`。结果一样是
-    # PR 合不了（check 本身就是 required 且已红），不会死锁；修好重新 push 后全套
-    # status 会重新产生。
-    needs: check
-    strategy:
-      fail-fast: false
-      matrix:
-        system:
-          - x86_64-linux
-          - aarch64-linux
-          - aarch64-darwin
-    runs-on: ${{ matrix.system }}
-    timeout-minutes: 120
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build (${{ matrix.system }})
-        run: |
-          set -euo pipefail
-          nix build --keep-going -o result .#ci.${{ matrix.system }}.all
-          echo "### ${{ matrix.system }} closure size"
-          nix path-info -Sh ./result
+      # 构建什么、打印什么都在 modules/ci.nix 里；这里只管调用。
+      - name: CI
+        run: nix run .#ci

@@ -133,11 +133,13 @@
               vimium
               stylus
               violentmonkey
+              zeroomega
             ];
 
           presets.betterfox.enable = true;
 
           settings = {
+            "zen.welcome-screen.seen" = true;
             "extensions.autoDisableScopes" = 0; # 允许 profile 目录里软链进来的 XPI 自动启用
             "browser.shell.checkDefaultBrowser" = false;
             "intl.locale.requested" = "zh-CN,en-US"; # 浏览器语言

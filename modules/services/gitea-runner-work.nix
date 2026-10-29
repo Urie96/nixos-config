@@ -74,6 +74,7 @@ in
       systemd.services."gitea-runner-devbox".environment =
         let
           proxy = "http://sys-proxy-rd-relay.byted.org:8118";
+          no_proxy = "10.37.107.28,localhost,127.0.0.1,.byted.org,.bytedance.net";
         in
         {
           http_proxy = proxy;
@@ -82,8 +83,8 @@ in
           HTTP_PROXY = proxy;
           HTTPS_PROXY = proxy;
           ALL_PROXY = proxy;
-          no_proxy = "10.37.107.28,localhost,127.0.0.1,.byted.org";
-          NO_PROXY = "10.37.107.28,localhost,127.0.0.1,.byted.org";
+          no_proxy = no_proxy;
+          NO_PROXY = no_proxy;
         };
     };
 }
