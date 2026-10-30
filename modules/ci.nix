@@ -86,8 +86,10 @@ in
             # 只落在 main 上的提交（每周 flake-update 的 flake.lock）如果不
             # 带回 daily，每晚的 daily → main 就会用 daily 的旧 lock 覆盖它
             # 或者直接冲突。
+            # 用默认 merge（允许 fast-forward）：daily 只是落后于 main 时直接
+            # 快进，不会为「没有内容变化」留一个合并提交。
             git checkout --quiet -B "$dev" "origin/$dev"
-            if ! git merge --no-ff --no-edit \
+            if ! git merge --no-edit \
               -m "chore: merge $base into $dev" "origin/$base"; then
               echo "❌ $base → $dev 合并冲突，需要手动解决：" >&2
               git --no-pager diff --name-only --diff-filter=U >&2
@@ -98,9 +100,18 @@ in
               echo "已把 $base 合回 $dev"
             fi
 
-            # ── 2) daily 没有 main 缺少的提交就收工，不建空 PR ───────
-            if [ "$(git rev-list --count "origin/$base..$dev")" -eq 0 ]; then
-              echo "$dev 没有可合并到 $base 的提交，跳过"
+            # ── 2) 和 main 内容一致就不建 PR ─────────────────────────
+            # 不能数提交：主线上的合并提交本身就让 daily 比 main「多」一个
+            # commit，但两边 tree 完全一样，这种 PR 在 GitHub 上是空 diff。
+            if git diff --quiet "origin/$base" "$dev"; then
+              echo "$dev 与 $base 内容一致，没有可合并的改动，跳过"
+              # 之前跑出来的空 PR 顺手关掉，别让它挂着 auto-merge
+              if [ "$(gh pr list --repo "$repo" --base "$base" --head "$dev" \
+                --state open --json number --jq length)" -gt 0 ]; then
+                echo "关闭没有 diff 的旧 PR"
+                gh pr close "$dev" --repo "$repo" \
+                  --comment "$dev 与 $base 内容已一致，自动关闭。"
+              fi
               exit 0
             fi
 
@@ -115,9 +126,12 @@ in
 
             # ── 4) 只 arm auto-merge，合并交给 GitHub 等 required checks ──
             # 放在 push 之后：head 变化时 GitHub 可能把 auto-merge 关掉。
+            # 用 --merge：main 会以合并提交包含 daily 的那些提交，第二天第 1 步
+            # 就退化成纯快进（Already up to date），既不会产生空 PR，也不会有
+            # 「squash 后的调和合并」。但这要求仓库设置里 Allow merge commits。
             if [ "$(gh pr view --repo "$repo" "$dev" \
               --json autoMergeRequest --jq '.autoMergeRequest != null')" != "true" ]; then
-              gh pr merge --repo "$repo" "$dev" --auto --squash
+              gh pr merge --repo "$repo" "$dev" --auto --merge
             fi
           '';
         };
