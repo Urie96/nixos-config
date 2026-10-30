@@ -23,6 +23,7 @@
           CONFIG_PATH = toString (
             yamlFormat.generate "apprise-config.yaml" {
               urls = [
+                # todo: secret
                 { "tgram://6396149308:AAGa5Bd9KbQsp795ehO3o0VQ3VwdNEiwTlc/-1002435707809" = [ { tag = "me"; } ]; }
               ];
             }
