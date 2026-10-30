@@ -3,6 +3,8 @@
   flake.nixosModules.nixbot =
     {
       config,
+      lib,
+      pkgs,
       ...
     }:
     {
@@ -41,6 +43,40 @@
         files.webhook-secret.restartUnits = [ "nixbot.service" ];
       };
 
+      # nixbot effects secrets JSON：把共享部署私钥（clan.core.vars.generators.nixbot-deploy，
+      # 声明在 modules/common/nixbot-deploy-target.nix）包成 nixbot 要求的格式：
+      #   { "<secretsMap 里的名字>": { "data": { ... } } }
+      # 这是 per-machine 生成器（只有 home-server 声明它），所以私钥只会作为 sops
+      # secret 落到 home-server 的 /run/secrets 下，其他机器拿不到。
+      #
+      # 同一个生成器还多导出一份裸私钥 `id_ed25519`，owner 设成主用户：
+      # 这样 urie 在 home-server 上可以直接 `ssh root@<机器>`（各机器 root 的
+      # authorized_keys 里都有这把 key 的公钥，见 nixbot-deploy-target）。
+      # 它在 modules/machines/home-server.nix 里作为最后一个 IdentityFile，直接指向
+      # 下面这个 /run/secrets 路径。
+      #
+      # 轮换：删掉 vars/shared/nixbot-deploy 整个目录后重新
+      #   clan vars generate home-server -g nixbot-deploy
+      #   clan vars generate home-server -g nixbot-deploy-secrets
+      clan.core.vars.generators.nixbot-deploy-secrets = {
+        dependencies = [ "nixbot-deploy" ];
+        files."effects-secrets.json".restartUnits = [ "nixbot.service" ];
+        files."id_ed25519" = {
+          owner = config.my.mainUser.name;
+          group = "users";
+        };
+        runtimeInputs = [
+          pkgs.jq
+          pkgs.coreutils
+        ];
+        script = ''
+          jq -n --rawfile privateKey "$in/nixbot-deploy/private-key" \
+            '{ "deploy-ssh": { data: { privateKey: $privateKey } } }' \
+            > "$out/effects-secrets.json"
+          cp "$in/nixbot-deploy/private-key" "$out/id_ed25519"
+        '';
+      };
+
       services.nixbot = {
         enable = true;
         # domain 在这个模块里被当成「对外 base URL」用（OAuth 的 redirect_uri、
@@ -61,6 +97,13 @@
         # Entries are provider-qualified: "github:<login>", "gitea:<login>",
         # "oidc:<issuer>:<username>".
         admins = [ "github:Urie96" ];
+
+        # 本仓库的 onPush / onSchedule effect 能拿到的 secrets。modules/ci.nix 里
+        # `secretsMap.ssh = "deploy-ssh"` 就是从这个 JSON 的 data 里按名字取的。
+        effects.perRepoSecretFiles = {
+          "github:Urie96/nixos-config" =
+            config.clan.core.vars.generators.nixbot-deploy-secrets.files."effects-secrets.json".path;
+        };
         github = {
           enable = true;
           appId = 5529037;

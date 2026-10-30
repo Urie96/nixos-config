@@ -1,9 +1,6 @@
 { self, ... }:
 {
-  clan.inventory.machines.nixos-desktop.deploy = {
-    targetHost = "root@192.168.2.5";
-    buildHost = "urie@home.lubui.com";
-  };
+  clan.inventory.machines.nixos-desktop.deploy.targetHost = "root@192.168.2.5";
 
   clan.machines.nixos-desktop =
     {
@@ -17,6 +14,8 @@
         desktop
         steam
       ];
+
+      clan.core.deployment.requireExplicitUpdate = true;
 
       my.mainUser.name = "urie";
       my.homeNetwork = true;

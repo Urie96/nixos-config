@@ -1,8 +1,5 @@
 {
-  clan.inventory.machines.rpi4.deploy = {
-    targetHost = "root@192.168.2.7";
-    buildHost = "urie@orangepi5plus.lan";
-  };
+  clan.inventory.machines.rpi4.deploy.targetHost = "root@192.168.2.7";
 
   clan.machines.rpi4 =
     {

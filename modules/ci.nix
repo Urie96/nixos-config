@@ -1,13 +1,20 @@
-# 本仓库自身的 CI 定时任务，由 home-server 上的 nixbot 执行（不是 NixOS 模块）。
+# 本仓库自身的 CI：main 分支部署 + 定时任务，由 home-server 上的 nixbot 执行
+# （不是 NixOS 模块）。
 #
-# nixbot 在每次默认分支（main）构建成功后，从 flake 的 `herculesCI.onSchedule`
-# 里发现定时任务并持久化，之后按 `when`（**UTC**）触发。每次运行都 checkout
-# 默认分支的最新 commit，所以这里的改动要先合进 main 才生效；PR 里改它不会
-# 给自己加任务。
+# nixbot 在每次默认分支（main）构建成功后，从 flake 的 `herculesCI` 里发现
+# `onPush.default.outputs.effects` 并按 `after` / `lock` 执行；`onSchedule` 里的
+# 定时任务则被持久化，之后按 `when`（**UTC**）触发。每次运行都 checkout 默认分支
+# 的最新 commit，所以这里的改动要先合进 main 才生效；PR 里改它不会给自己加任务。
 #
-# 两个任务：
-#   flake-update  每周更新 flake.lock 里所有直接 input，开 PR 到 main，等检查通过后自动 squash 合并
-#   daily-merge   每天晚上把 main 合回 daily，再开好 daily → main 的 PR 并 arm auto-merge
+# PR 上 effect 不会真的跑（`effects_on_pull_requests` 默认关），但 nixbot 会把它们的
+# 依赖当作 "Effect checks" 构建一遍——所以部署 effect 意味着 PR 也会构建各机器的
+# toplevel（正好等价于 `clan machines build`）。
+#
+# 内容：
+#   onPush.default  deploy-<machine>  每次 main push 后把机器切到本 commit 的配置
+#                                   （NixOS 用 runNixOS，mac-mini 用 runNixDarwin）
+#   onSchedule      flake-update      每周更新 flake.lock 里所有直接 input，开 PR 到 main
+#   onSchedule      daily-merge       每天晚上把 main 合回 daily，再开好 daily → main 的 PR
 #
 # GitHub 侧前提：
 #   · App 权限 Contents: Write（effect 要 push）、Checks: Write（上报 check run）
@@ -19,8 +26,78 @@
 { self, ... }:
 let
   pkgs = self.inputs.nixpkgs.legacyPackages.x86_64-linux;
+  inherit (pkgs) lib;
   effects = self.inputs.nixbot.lib.effects { inherit pkgs; };
-  inherit (effects) flakeUpdate mkEffect;
+  inherit (effects)
+    flakeUpdate
+    mkEffect
+    runNixDarwin
+    runNixOS
+    ;
+
+  # 目标地址覆盖：home-server 就是这个 effect 的宿主，走公网域名（NAT 回环）
+  # 不如直接打本机回环可靠。
+  destinationOverride = {
+    home-server = "root@127.0.0.1";
+  };
+
+  # 自动部署的机器清单：从 clan inventory 推导，不单独维护。条件：
+  #   · machineClass 匹配（nixos → runNixOS，darwin → runNixDarwin）
+  #   · inventory 里有 deploy.targetHost
+  #   · 没有设 `clan.core.deployment.requireExplicitUpdate = true`
+  #     那个选项的语义就是「不总是在线 / 不在常规更新周期」，正好等于要从自动
+  #     部署里排除的机器（tencent、ali、rpi4、nixos-desktop、work-macbook 都设了它）。
+  # 想让某台机器加入/退出自动部署就改那个选项，不用动这里。
+  configSetFor =
+    class: if class == "darwin" then self.darwinConfigurations else self.nixosConfigurations;
+
+  deployableFor =
+    class:
+    let
+      configurations = configSetFor class;
+    in
+    lib.filterAttrs (
+      name: machine:
+      machine.machineClass == class
+      && (machine.deploy.targetHost or null) != null
+      && !configurations.${name}.config.clan.core.deployment.requireExplicitUpdate
+    ) self.clan.inventory.machines;
+
+  # 一次部署 = runNixOS / runNixDarwin effect：构建好的 toplevel 用
+  # nix-copy-closure 推到目标机，再在那边 `nix-env -p <profile> --set` + 切换配置
+  # （NixOS 是 `switch-to-configuration switch`，darwin 是 `darwin-rebuild activate`）。
+  # SSH 私钥来自 nixbot 的 effects secrets JSON（见 modules/services/nixbot.nix），
+  # 公钥已经写进各机器 root 的 authorized_keys
+  # （modules/common/nixbot-deploy-target.nix）。
+  #
+  # darwin 的 toplevel 是 home-server 通过 nix.buildMachines 里的 mac-mini
+  # remote builder 编出来的（aarch64-darwin 原生构建），不需要 qemu。
+  mkDeploys =
+    class: deploy:
+    let
+      configurations = configSetFor class;
+    in
+    lib.mapAttrs' (
+      name: machine:
+      lib.nameValuePair "deploy-${name}" (deploy {
+        configuration = configurations.${name};
+        ssh = {
+          destination = destinationOverride.${name} or machine.deploy.targetHost;
+          # 沙箱里每次都是全新的 $HOME，没有 known_hosts；首次连接接受并记住目标
+          # 主机公钥。
+          sshOptions = "-o StrictHostKeyChecking=accept-new";
+        };
+        # 每台机器一把锁：两次 push 的部署不会在目标机上交错执行切换。
+        lock = "deploy-${name}";
+        # 与 JSON 里 data.privateKey 对应的 secretsMap 名字。
+        secretsMap.ssh = "deploy-ssh";
+        # runNixDarwin 自己会写 effectScript，key 只能在 userSetupScript 里准备。
+        userSetupScript = "writeSSHKey ssh";
+        # toplevel 没变就不重跑：否则每次 push 都会对每台机器跑一遍切换。
+        # 只看上一次**成功**的运行，失败的会在下次 push 重试。
+        when.changed.toplevel = configurations.${name}.config.system.build.toplevel.outPath;
+      })
+    ) (deployableFor class);
 in
 {
   flake.herculesCI =
@@ -29,6 +106,12 @@ in
       ownerRepo = "${primaryRepo.owner}/${primaryRepo.name}";
     in
     {
+      # ── 部署：默认分支 push 成功后把每台机器切到本次 commit ──────────────
+      #
+      # 注意 home-server 是 nixbot 自己所在的机器：switch 如果改动到 nixbot.service
+      # （或它的依赖）会把跑 effect 的进程一起重启，这次 effect 会显示失败但配置其实
+      # 已经生效；下一次 push 会重跑一遍（switch 无事可做）并记成成功。
+      onPush.default.outputs.effects = mkDeploys "nixos" runNixOS // mkDeploys "darwin" runNixDarwin;
       # ── 任务 2：每周更新所有 input ────────────────────────────────────
       onSchedule.flake-update = {
         when = {
