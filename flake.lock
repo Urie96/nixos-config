@@ -564,6 +564,31 @@
         "url": "https://git.clan.lol/clan/nix-select/archive/main.tar.gz"
       }
     },
+    "nixbot": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792957919,
+        "narHash": "sha256-RSv0qnvHhAAA+/Cr+hmMaMk9BwRR37ilA65idJ3sYZw=",
+        "ref": "main",
+        "rev": "88246b4cfa43c4fb1c9cf6f78b875b3a312d31e7",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/Mic92/nixbot"
+      },
+      "original": {
+        "ref": "main",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/Mic92/nixbot"
+      }
+    },
     "nixos-hardware": {
       "inputs": {
         "nixpkgs": [
@@ -757,6 +782,7 @@
         "nix-homebrew": "nix-homebrew",
         "nix-index-database": "nix-index-database",
         "nix-on-droid": "nix-on-droid",
+        "nixbot": "nixbot",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",
         "nur-packages": "nur-packages",

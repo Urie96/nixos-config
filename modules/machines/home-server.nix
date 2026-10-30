@@ -22,6 +22,7 @@
         # 这台机器也是构建机（x86 leg 的 runner），构建的包也在构建时签名
         nix-signing
         gitea-runner-home
+        nixbot
         # aarch64-linux 派给 orangepi5plus，aarch64-darwin 派给 mac-mini
         nix-builders-client
       ];

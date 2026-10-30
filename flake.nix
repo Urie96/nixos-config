@@ -115,6 +115,10 @@
     wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
     wrappers.inputs.nixpkgs.follows = "nixpkgs";
 
+    nixbot.url = "git+https://github.com/Mic92/nixbot?shallow=1&ref=main";
+    nixbot.inputs.nixpkgs.follows = "nixpkgs";
+    nixbot.inputs.treefmt-nix.follows = "treefmt-nix";
+
     # nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
     # nixos-raspberrypi.inputs.nixpkgs.follows = "nixpkgs";
   };
