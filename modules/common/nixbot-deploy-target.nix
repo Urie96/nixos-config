@@ -47,6 +47,7 @@ let
       # nix-darwin 里 users.users.root 只有在本模块给出 uid/gid 时才不会被当成
       # 需要 sysadminctl 创建的新账号（mac-mini 已经由 nix-builders-builder 定义过，
       # 这里给同样的值只是让本模块可以单独复用）。
+      #
       users.users.root =
         lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
           uid = 0;
@@ -55,6 +56,35 @@ let
         // {
           openssh.authorizedKeys.keys = lib.optional pub.exists (lib.trim pub.value);
         };
+
+      # 把 root 的登录 shell 改成 zsh，否则 nixbot 的 darwin 部署连不上：
+      # runNixDarwin 用 `nix-copy-closure --to root@<host>`，它执行的是
+      # `ssh root@<host> -- nix-store --serve --write`。sshd 用 root 的登录 shell
+      # 以**非登录、非交互**方式跑这条命令，而 macOS 上 root 默认是 /bin/sh：
+      # sh 在这种模式下不读 /etc/profile、/etc/bashrc、/etc/zshenv，PATH 只剩
+      # /usr/bin:/bin:/usr/sbin:/sbin，于是报 `sh: nix-store: command not found`
+      # （同一现象：`nix store info --store ssh://root@<host>`）。
+      #
+      # 为什么是 zsh：nix-darwin 把 PATH 写进 /etc/zshenv，而 zsh 对**所有**调用
+      # （包括 `zsh -c`）都会读 /etc/zshenv；bash 的 /etc/bashrc 只在交互时读，
+      # sh 两个都不读。
+      #
+      # 为什么不用 users.users.root.shell：nix-darwin 只对 users.knownUsers 里的
+      # 用户生成 `dscl . -create ... UserShell`（见 nix-darwin modules/users），
+      # 而 root 故意不纳管（modules/system/nix-builders.nix 有说明），写了是死配置。
+      #
+      # NixOS 目标机不需要这段：NixOS 的 sshd unit 自带 /run/current-system/sw/bin
+      # 的 PATH；clan 也不需要：它给 darwin 的 store URL 拼了
+      # `?remote-program=bash -lc 'exec nix-daemon --stdio'`（见 clan-cli
+      # clan_lib/machines/update.py），只有 nix-copy-closure 没法传这个参数。
+      system = lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+        # nix-darwin 只执行固定名字的激活脚本（见 nix-darwin
+        # modules/system/activation-scripts.nix），所以这里挂在 postActivation 上，
+        # 自定义名字不会被运行。
+        activationScripts.postActivation.text = lib.mkAfter ''
+          /usr/bin/dscl . -create /Users/root UserShell /bin/zsh
+        '';
+      };
     };
 in
 {
