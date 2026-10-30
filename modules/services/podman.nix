@@ -5,12 +5,14 @@
       virtualisation = {
         containers = {
           enable = true;
-          storage.settings = {
-            storage = {
+          storage = {
+            settings.storage = {
               driver = "btrfs";
+              options.overlay.mountopt = "nodev,metacopy=on";
+            }; # storage
+            rootful.settings.storage = {
               runroot = "/run/containers/storage";
               graphroot = "/var/lib/containers/storage";
-              options.overlay.mountopt = "nodev,metacopy=on";
             }; # storage
           };
         };

@@ -33,7 +33,6 @@
         "-19"
         "-T0"
       ];
-      systemd.enable = true;
     };
 
     systemd.services."getty@ttyS0".enable = true;
