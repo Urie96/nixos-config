@@ -1,9 +1,10 @@
 { self, ... }:
 {
-  clan.inventory.machines.home-server.deploy.targetHost = "root@home.lubui.com";
+  clan.inventory.machines.home-server.deploy.targetHost = "root@192.168.1.7";
 
   clan.machines.home-server =
     {
+      config,
       pkgs,
       inputs',
       lib,
@@ -28,6 +29,20 @@
       ];
 
       my.mainUser.name = "urie";
+
+      # 一旦显式配置 IdentityFile，ssh 就不再自动加载默认的
+      # ~/.ssh/id_rsa、~/.ssh/id_ed25519，所以把它们一并列出，部署 key
+      # 放最后当兜底（不设 IdentitiesOnly，agent 里的 key 也照旧可用）。
+      home-manager.users.${config.my.mainUser.name}.programs.ssh.settings."*".IdentityFile = [
+        "~/.ssh/id_ed25519"
+        "~/.ssh/id_rsa"
+        # nixbot 部署私钥（modules/services/nixbot.nix 的 nixbot-deploy-secrets/id_ed25519，
+        # owner 就是主用户）。各机器 root 的 authorized_keys 里都有它的公钥
+        # （modules/common/nixbot-deploy-target.nix），所以拿到私钥就能直接
+        # `ssh root@<机器>`。
+        config.clan.core.vars.generators.nixbot-deploy-secrets.files."id_ed25519".path
+      ];
+
       my.homeNetwork = true;
 
       environment.systemPackages = with pkgs; [

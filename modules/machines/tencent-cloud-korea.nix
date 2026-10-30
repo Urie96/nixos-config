@@ -1,9 +1,6 @@
 { self, ... }:
 {
-  clan.inventory.machines.tencent-cloud-korea.deploy = {
-    targetHost = "root@43.133.236.247";
-    buildHost = "urie@home.lubui.com";
-  };
+  clan.inventory.machines.tencent-cloud-korea.deploy.targetHost = "root@43.133.236.247";
 
   clan.machines.tencent-cloud-korea = {
     imports = with self.nixosModules; [

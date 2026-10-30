@@ -1,10 +1,7 @@
 { self, lib, ... }:
 {
 
-  clan.inventory.machines.ali-cloud-light-vmess.deploy = {
-    targetHost = "root@47.76.155.157";
-    buildHost = "urie@home.lubui.com";
-  };
+  clan.inventory.machines.ali-cloud-light-vmess.deploy.targetHost = "root@47.76.155.157";
 
   clan.machines.ali-cloud-light-vmess = {
     imports = with self.nixosModules; [
