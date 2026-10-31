@@ -77,6 +77,15 @@ deck.config {
       end,
     },
     {
+      'urie96/nixbot.lazydeck',
+      config = function()
+        require('nixbot').setup {
+          base_url = 'https://nixbot.lubui.com:8443',
+          token = get_secret 'nixbot-token',
+        }
+      end,
+    },
+    {
       'urie96/netease-music.lazydeck',
       config = function()
         os.execute 'ssh -f -N -L 127.0.0.1:3000:127.0.0.1:3110 home.lubui.com &>/dev/null'
