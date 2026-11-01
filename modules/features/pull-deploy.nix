@@ -223,10 +223,6 @@ in
         # systemd 对已经在跑的 oneshot 再触发 start 是 no-op，不会并发，不需要锁。
         systemd.services.pull-deploy = {
           script = "${pullDeploy}/bin/pull-deploy";
-          # 失败后 6 小时内不再尝试，免得反复激活半个状态。这两个是 [Unit] 级别的
-          # 选项（所以不写在 serviceConfig 里）；成功一次计数就会清零。
-          startLimitIntervalSec = 6 * 60 * 60;
-          startLimitBurst = 1;
           serviceConfig = {
             Type = "oneshot";
             User = "root";
