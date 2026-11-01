@@ -87,6 +87,18 @@ in
       experimental-features = nix-command flakes
     '';
 
+    nix = {
+      substituters = [
+        "https://cache.lubui.com:8443"
+        "https://mirrors.ustc.edu.cn/nix-channels/store"
+        "https://cache.numtide.com"
+      ];
+      trustedPublicKeys = [
+        "cache.lubui.com-1:sOTVoQUdzu6FAIBD8bqWVWtMRdkr3LSHRMpw4ggKVFA="
+        "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+      ];
+    };
+
     nix.registry.nixpkgs.flake = self.inputs.nixpkgs;
   };
 
