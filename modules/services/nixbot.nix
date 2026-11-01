@@ -104,6 +104,18 @@
           "github:Urie96/nixos-config" =
             config.clan.core.vars.generators.nixbot-deploy-secrets.files."effects-secrets.json".path;
         };
+
+        # 拉取式部署的清单目录（modules/ci.nix 里的 mkPull effect）。effect 跑在
+        # bwrap 沙箱里，宿主目录只能通过 mountables 进去；readOnly = false 才能写，
+        # condition 限定只有默认分支的 effect 能拿到。宿主目录本身由下面的 tmpfiles
+        # 创建，并在 nixbot.service 的 ReadWritePaths 里放开
+        # （ProtectSystem = strict）。
+        effects.mountables.desired-state = {
+          source = "/var/lib/nixbot/desired-state";
+          readOnly = false;
+          condition = "isDefaultBranch";
+        };
+
         github = {
           enable = true;
           appId = 5529037;
@@ -185,6 +197,34 @@
             proxy_buffering off;
           '';
         };
+      };
+
+      # ── 拉取式部署的清单（desired-state）──────────────────────────────
+      #
+      # effect 只能写 mountables 挂进来的目录；tmpfiles 负责创建它，
+      # ReadWritePaths 负责在 ProtectSystem = strict 下放开写权限（列表选项，
+      # 追加不会覆盖模块自己设的值）。
+      systemd.tmpfiles.rules = [
+        "d /var/lib/nixbot/desired-state 0755 nixbot nixbot - -"
+      ];
+
+      systemd.services.nixbot.serviceConfig.ReadWritePaths = [
+        "/var/lib/nixbot/desired-state"
+      ];
+
+      # 挂在已有缓存 vhost（modules/services/harmonia.nix）上：三台拉取式机器
+      # 本来就把它当 substituter 用，可达性是现成的。
+      #
+      # 一台机器一个文件，内容就是它的 store path（纯文本），客户端直接 curl：
+      #   https://cache.lubui.com:8443/desired-state/<机器名>
+      services.nginx.virtualHosts."cache.lubui.com".locations."/desired-state/" = {
+        # alias 在 '/' 结尾的 location 里也必须以 '/' 结尾，否则 nginx 会拼错路径。
+        alias = "/var/lib/nixbot/desired-state/";
+        extraConfig = ''
+          default_type text/plain;
+          autoindex off;
+          add_header Cache-Control "no-store";
+        '';
       };
     };
 }

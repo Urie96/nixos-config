@@ -4,7 +4,7 @@
   ...
 }:
 {
-  # 上游 home-manager 模块在 macOS 上默认 signed：.app 原样安装，保留 Zen 的
+  # zen-browser-flake 的 home-manager 模块在 macOS 上默认 signed：.app 原样安装，保留 Zen 的
   # 代码签名（1Password / iCloud 密码 / Touch ID / Gatekeeper 都依赖 Team ID）。
   # 代价是 wrapFirefox 往 bundle 内写东西的能力（extraPrefs 等）全部不可用，
   # policies 只能落到 `app.zen-browser.zen` 这个 defaults domain。Linux 上该选项
@@ -19,7 +19,7 @@
       imports = [ self.inputs.zen-browser.homeModules.beta ];
 
       # macOS 上 Zen 会自己另造 profile，两个门槛都要满足：
-      # 1) 上游 #285：HM 把 profiles.ini 渲染成指向 /nix/store 的只读软链，浏览器写不进去
+      # 1) zen-browser-flake issue #285：HM 把 profiles.ini 渲染成指向 /nix/store 的只读软链，浏览器写不进去
       #    （报 "An unexpected error has prevented your changes from being saved."）。
       # 2) Firefox 的 dedicated-profile 逻辑（nsToolkitProfileService.cpp）：没有
       #    `[Install<hash>] Default=…` 就算“本安装首次运行”，而首次运行只在 profile 目录里
@@ -106,8 +106,8 @@
         # 所以显式写成和浏览器自己一样的 2（internal 选项，但就是 profiles.ini 的这个字段）。
         profileVersion = 2;
 
-        # 上游模块已经把 DisableAppUpdate / DisableTelemetry 设成 mkDefault true，
-        # 这里只补和渠道无关、且在 signed 模式下同样生效的策略。
+        # zen-browser-flake 的模块已经把 DisableAppUpdate / DisableTelemetry 设成
+        # mkDefault true，这里只补和渠道无关、且在 signed 模式下同样生效的策略。
         policies = {
           DisableAppUpdate = true; # 禁止浏览器自我更新
           DisablePocket = true; # 移除 Pocket 集成

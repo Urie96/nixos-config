@@ -19,7 +19,15 @@
         disable-awdl
         work
         gitea-runner-work
+        # 拉取式自动部署：这台不在局域网里，nixbot 推不进来，改成定时拉
+        # cache.lubui.com 上的 desired-state 清单、比较、拉闭包并激活。
+        pull-deploy
       ];
+
+      pullDeploy = {
+        enable = true;
+        machine = "work-macbook";
+      };
 
       homebrew.casks = [ "feishu" ];
 

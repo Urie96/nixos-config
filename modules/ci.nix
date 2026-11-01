@@ -13,6 +13,11 @@
 # 内容：
 #   onPush.default  deploy-<machine>  每次 main push 后把机器切到本 commit 的配置
 #                                   （NixOS 用 runNixOS，mac-mini 用 runNixDarwin）
+#   onPush.default  publish-<machine>
+#                                   把「拉取式部署机器应该跑的 toplevel」写成
+#                                   /var/lib/nixbot/desired-state/<机器名>（纯文本 store path），
+#                                   由 cache.lubui.com 静态发出，机器自己拉取并切换
+#                                   （modules/features/pull-deploy.nix）
 #   onSchedule      flake-update      每周更新 flake.lock 里所有直接 input，开 PR 到 main
 #   onSchedule      daily-merge       每天晚上把 main 合回 daily，再开好 daily → main 的 PR
 #
@@ -98,6 +103,37 @@ let
         when.changed.toplevel = configurations.${name}.config.system.build.toplevel.outPath;
       })
     ) (deployableFor class);
+
+  # 拉取式部署：每台机器一个 effect（返回 `{ publish-<机器名> = effect; }`，方便和
+  # 上面的 deploy-* 一起 `//` 起来），把「它应该跑的 toplevel」写成
+  # /var/lib/nixbot/desired-state/<机器名>（**纯文本**，内容就是 store path，
+  # 客户端 curl 出来直接当路径用，不需要解析）。cache.lubui.com 上的 nginx 把
+  # 这个目录静态发出去，机器自己定时拉取、比较、拉闭包并激活
+  # （客户端见 modules/features/pull-deploy.nix）。
+  #
+  # 写盘目录来自 services.nixbot.effects.mountables（modules/services/nixbot.nix），
+  # 只有默认分支的 effect 才拿得到。客户端可能在任意时刻读这个文件，所以先写临时
+  # 文件再 mv，避免读到半个路径。
+  #
+  # 刻意不设 `after`：不等局域网机器的 deploy-* 成功，merge 进 main 就放行。
+  mkPull =
+    name: drv:
+    {
+      "publish-${name}" = mkEffect {
+        name = "desired-state-${name}";
+        __hci_effect_mounts = builtins.toJSON {
+          "/var/lib/nixbot/desired-state" = "desired-state";
+        };
+        # 这台机器的 toplevel 没变就不重写（只看上一次**成功**的运行）。
+        when.changed.toplevel = "${drv}";
+        effectScript = ''
+          set -euo pipefail
+          dir=/var/lib/nixbot/desired-state
+          printf '%s\n' '${drv}' > "$dir/.${name}.new"
+          mv -f "$dir/.${name}.new" "$dir/${name}"
+        '';
+      };
+    };
 in
 {
   flake.herculesCI =
@@ -111,7 +147,17 @@ in
       # 注意 home-server 是 nixbot 自己所在的机器：switch 如果改动到 nixbot.service
       # （或它的依赖）会把跑 effect 的进程一起重启，这次 effect 会显示失败但配置其实
       # 已经生效；下一次 push 会重跑一遍（switch 无事可做）并记成成功。
-      onPush.default.outputs.effects = mkDeploys "nixos" runNixOS // mkDeploys "darwin" runNixDarwin;
+      onPush.default.outputs.effects =
+        mkDeploys "nixos" runNixOS
+        // mkDeploys "darwin" runNixDarwin
+        # 拉取式部署：不在局域网、没有公网 IP 的机器。目录名就是 desired-state
+        # 下的文件名，必须和客户端 modules/features/pull-deploy.nix 里的
+        # pullDeploy.machine 一致。
+        // mkPull "devbox" self.legacyPackages.x86_64-linux.systemConfigs.devbox
+        // mkPull "work-macbook"
+          self.darwinConfigurations.work-macbook.config.system.build.toplevel
+        // mkPull "nix-on-droid"
+          self.legacyPackages.aarch64-linux.nixOnDroidConfigurations.default.activationPackage;
       # ── 任务 2：每周更新所有 input ────────────────────────────────────
       onSchedule.flake-update = {
         when = {
@@ -121,6 +167,18 @@ in
         outputs.effects.update = flakeUpdate {
           inherit (primaryRepo) forgeType;
           updateBranch = "flake-update";
+          # 每周先把分支 reset 到当前 main，再跑 `nix flake update`。
+          # 不设 baseMergeBranch 时 effect 不会跟 main 同步（nixbot-flake-update.py:
+          # `method = baseMergeMethod if baseMergeBranch else None`），分支一直停在创建
+          # 时的那个 commit 上；而 main 侧的 `flake.lock`: Update PR 同时在改同一批
+          # input，两边 lock 的 narHash/rev 逐行不同 → git 合不动，PR 会以
+          # `merge of <sha> conflicts with base branch:` 失败（冲突文件只有 flake.lock）。
+          # 用 reset 而不是默认的 merge / rebase：这个分支归 nixbot 所有，merge 和
+          # rebase 都会在 lock 已经分岔时再次撞上同一批冲突（而 effect 里没人能解冲突），
+          # reset 是 `checkout -B flake-update main` + force push，结果确定且永远可合。
+          # 代价：分支上非 nixbot 的提交会被丢弃。
+          baseMergeBranch = "main";
+          baseMergeMethod = "reset";
           commitSummary = "flake.lock: update";
           # 等 required checks 通过后由 GitHub 自己 squash 合并；
           # 只在 github / gitea 上有效。

@@ -17,6 +17,8 @@
             gitea-runner-work
             niks3-work
             nix-access-token
+            # 定时从 cache.lubui.com 拉 desired-state 清单并切换（见下面 pullDeploy）
+            pull-deploy
           ])
           ++ [
             (
@@ -37,6 +39,15 @@
               in
               {
                 my.mainUser.name = username;
+
+                # 拉取式自动部署（没有公网 IP，nixbot 推不进来）：定时拉
+                # cache.lubui.com 上的 desired-state 清单，和当前
+                # /nix/var/nix/gcroots/system-manager-current 比较，不一致就拉闭包
+                # 并激活。见 modules/features/pull-deploy.nix。
+                pullDeploy = {
+                  enable = true;
+                  machine = "devbox";
+                };
 
                 # fish 交互式 shell 同样走这个代理。写在这里而不是 modules/wrappers/fish：
                 # `flake.wrappers.fish` 是所有机器共用的包，而 system config 里的
