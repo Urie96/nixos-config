@@ -38,7 +38,6 @@
 
       environment.variables = {
         EDITOR = "nvim";
-        MANPAGER = "nvim +Man!";
         LANG = "zh_CN.UTF-8";
         HF_ENDPOINT = "https://hf-mirror.com";
       };

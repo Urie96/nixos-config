@@ -6,17 +6,21 @@
 #
 #   1. 拉自己那个文件（拿不到就当没事发生，下个周期再试）；
 #   2. 和「当前 system」比较 —— 只是 readlink -f 一个固定的 profile/gcroot 链接；
-#   3. 不一致就拉闭包（nix copy / nix build）并用该 generation 自带的命令激活。
+#   3. 不一致就 `nix build --no-link <outPath>` 拉闭包（并行替代），再用该
+#      generation 自带的命令激活。
 #
 # 全程不做 nix 求值、不碰 git，也不需要 JSON 解析：机器只需要能访问
 # cache.lubui.com。
 #
-# `nix build` / `nix copy` 的选择不是风格问题：
-#   · darwin 的 toplevel 只设了 preferLocalBuild，没有 allowSubstitutes，所以
-#     `nix build <outPath>` 能直接替代下来，顺便用 --profile 登记 profile；
-#   · system-manager 和 nix-on-droid 的 toplevel 带 allowSubstitutes = false
-#     （NixOS 的 system.build.toplevel 同样如此），`nix build` 会试图本地构建它，
-#     必须用 `nix copy --from`——显式拷贝不看那个标志。
+# 为什么用 `nix build <store path>` 而不是 `nix copy --from`：
+#   · 它走的是 substitution goal，按 `max-substitution-jobs`（默认 16）并行拉 NAR，
+#     而 `nix copy` 是逐 path 串行拷；
+#   · 显式给 store path 时不受派生的 `allowSubstitutes = false` 影响（这一点实测过：
+#     带 allowSubstitutes/preferLocalBuild 的派生，删掉后仍能从 file:// 缓存被
+#     `nix build` 替代回来），所以 NixOS / system-manager / nix-on-droid 这些把
+#     toplevel 标成 allowSubstitutes = false 的目标也照样能拉；
+#   · 缓存里万一真的没有，它会退化成在本地构建，而不是直接失败。
+# darwin 多一个 `--profile`：拉下来的同时把它登记成当前 profile。
 { self, ... }:
 let
   # 三个 class 共用的选项。机器名显式写（devbox / work-macbook / nix-on-droid），
@@ -42,7 +46,10 @@ let
         cacheUrl = lib.mkOption {
           type = lib.types.str;
           default = "https://cache.lubui.com:8443";
-          description = "闭包来源（home-server 上的 harmonia）。";
+          description = ''
+            home-server 上的缓存/文件服务（harmonia + desired-state）。
+            `stateUrl` 默认由它拼出，同时也当 `nix build` 的 substituter 前缀用。
+          '';
         };
       };
     };
@@ -82,7 +89,8 @@ let
         pkgs.curl
         pkgs.coreutils
         pkgs.nix
-      ] ++ extraInputs;
+      ]
+      ++ extraInputs;
       text = ''
         state_url='${stateUrl}'
         current='${current}'
@@ -126,7 +134,12 @@ in
   # 用 LaunchDaemon 而不是 user agent：nix build --profile 和 activate 都要 root。
   # 后台激活会重启部分 launchd 服务，属预期行为。
   flake.darwinModules.pull-deploy =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.pullDeploy;
 
@@ -174,7 +187,12 @@ in
 
   # ── system-manager（devbox）──────────────────────────────────────────
   flake.sysModules.pull-deploy =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.pullDeploy;
 
@@ -183,8 +201,7 @@ in
         inherit (cfg) machine stateUrl;
         current = "/nix/var/nix/gcroots/system-manager-current";
         deployShell = ''
-          # toplevel 带 allowSubstitutes = false → 显式拷贝，不要用 nix build。
-          nix copy --from '${cfg.cacheUrl}' "$want"
+          nix build --no-link "$want"
           # 等价于 `system-manager switch` 的后两步，但用的是新 generation 自带的
           # engine（避免「旧 engine 激活新格式 generation」）。register 内部裸调
           # nix-env，所以上面的 runtimeInputs 必须带 nix。
@@ -233,7 +250,12 @@ in
   # cron job。注意会话必须在（app 开着 + termux-wake-lock），新的 activation 也要
   # 下一个 session 才完全生效。
   flake.droidModules.pull-deploy =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.pullDeploy;
 
@@ -245,8 +267,9 @@ in
         lock = "${config.user.home}/.local/state/pull-deploy.lock";
         extraInputs = [ pkgs.util-linux ];
         deployShell = ''
-          # activationPackage 同样是 allowSubstitutes = false → 显式拷贝。
-          nix copy --from '${cfg.cacheUrl}' "$want"
+          # 拉闭包（并行替代；activationPackage 的 allowSubstitutes = false
+          # 只影响「经由派生去构建」的路径，不影响显式 store path）。
+          nix build --no-link "$want"
           # activate 自己会 nix-env --profile /nix/var/nix/profiles/nix-on-droid --set。
           "$want/activate"
           # 新 generation 的 crontab 是新的 store path，而 supercronic 是长驻进程，

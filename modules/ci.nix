@@ -15,7 +15,7 @@
 #                                   （NixOS 用 runNixOS，mac-mini 用 runNixDarwin）
 #   onPush.default  publish-<machine>
 #                                   把「拉取式部署机器应该跑的 toplevel」写成
-#                                   /var/lib/nixbot/desired-state/<机器名>（纯文本 store path），
+#                                   /var/lib/desired-state/<机器名>（纯文本 store path），
 #                                   由 cache.lubui.com 静态发出，机器自己拉取并切换
 #                                   （modules/features/pull-deploy.nix）
 #   onSchedule      flake-update      每周更新 flake.lock 里所有直接 input，开 PR 到 main
@@ -106,7 +106,7 @@ let
 
   # 拉取式部署：每台机器一个 effect（返回 `{ publish-<机器名> = effect; }`，方便和
   # 上面的 deploy-* 一起 `//` 起来），把「它应该跑的 toplevel」写成
-  # /var/lib/nixbot/desired-state/<机器名>（**纯文本**，内容就是 store path，
+  # /var/lib/desired-state/<机器名>（**纯文本**，内容就是 store path，
   # 客户端 curl 出来直接当路径用，不需要解析）。cache.lubui.com 上的 nginx 把
   # 这个目录静态发出去，机器自己定时拉取、比较、拉闭包并激活
   # （客户端见 modules/features/pull-deploy.nix）。
@@ -116,24 +116,22 @@ let
   # 文件再 mv，避免读到半个路径。
   #
   # 刻意不设 `after`：不等局域网机器的 deploy-* 成功，merge 进 main 就放行。
-  mkPull =
-    name: drv:
-    {
-      "publish-${name}" = mkEffect {
-        name = "desired-state-${name}";
-        __hci_effect_mounts = builtins.toJSON {
-          "/var/lib/nixbot/desired-state" = "desired-state";
-        };
-        # 这台机器的 toplevel 没变就不重写（只看上一次**成功**的运行）。
-        when.changed.toplevel = "${drv}";
-        effectScript = ''
-          set -euo pipefail
-          dir=/var/lib/nixbot/desired-state
-          printf '%s\n' '${drv}' > "$dir/.${name}.new"
-          mv -f "$dir/.${name}.new" "$dir/${name}"
-        '';
+  mkPull = name: drv: {
+    "publish-${name}" = mkEffect {
+      name = "desired-state-${name}";
+      __hci_effect_mounts = builtins.toJSON {
+        "/var/lib/desired-state" = "desired-state";
       };
+      # 这台机器的 toplevel 没变就不重写（只看上一次**成功**的运行）。
+      when.changed.toplevel = "${drv}";
+      effectScript = ''
+        set -euo pipefail
+        dir=/var/lib/desired-state
+        printf '%s\n' '${drv}' > "$dir/.${name}.new"
+        mv -f "$dir/.${name}.new" "$dir/${name}"
+      '';
     };
+  };
 in
 {
   flake.herculesCI =
@@ -154,15 +152,13 @@ in
         # 下的文件名，必须和客户端 modules/features/pull-deploy.nix 里的
         # pullDeploy.machine 一致。
         // mkPull "devbox" self.legacyPackages.x86_64-linux.systemConfigs.devbox
-        // mkPull "work-macbook"
-          self.darwinConfigurations.work-macbook.config.system.build.toplevel
-        // mkPull "nix-on-droid"
-          self.legacyPackages.aarch64-linux.nixOnDroidConfigurations.default.activationPackage;
+        // mkPull "work-macbook" self.darwinConfigurations.work-macbook.config.system.build.toplevel
+        // mkPull "nix-on-droid" self.legacyPackages.aarch64-linux.nixOnDroidConfigurations.default.activationPackage;
       # ── 任务 2：每周更新所有 input ────────────────────────────────────
       onSchedule.flake-update = {
         when = {
-          dayOfWeek = [ "Sun" ];
-          hour = [ 8 ];
+          dayOfWeek = [ "Sat" ];
+          hour = [ 21 ];
         };
         outputs.effects.update = flakeUpdate {
           inherit (primaryRepo) forgeType;

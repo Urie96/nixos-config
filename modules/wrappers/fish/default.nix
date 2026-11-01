@@ -49,7 +49,6 @@
 
         set -gx HF_ENDPOINT 'https://hf-mirror.com'
         set -gx LANG 'zh_CN.UTF-8'
-        set -gx MANPAGER 'nvim +Man!'
         set -gx PNPM_HOME ~/.local/share/pnpm
         set -gx XDG_CACHE_HOME ~/.cache
         set -gx XDG_CONFIG_HOME ~/.config

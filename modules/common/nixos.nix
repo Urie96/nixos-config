@@ -37,7 +37,6 @@
 
       environment.variables = {
         EDITOR = lib.mkForce "nvim";
-        MANPAGER = "nvim +Man!";
         HF_ENDPOINT = "https://hf-mirror.com";
       };
 
