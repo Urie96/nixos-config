@@ -19,6 +19,7 @@ local function get_secret(key)
   end
 
   local _, value = run('rbw get ' .. shq(key))
+  value = value:gsub('^%s+', ''):gsub('%s+$', '')
   return value
 end
 

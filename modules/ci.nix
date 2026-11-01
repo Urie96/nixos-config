@@ -167,6 +167,18 @@ in
         outputs.effects.update = flakeUpdate {
           inherit (primaryRepo) forgeType;
           updateBranch = "flake-update";
+          # 每周先把分支 reset 到当前 main，再跑 `nix flake update`。
+          # 不设 baseMergeBranch 时 effect 不会跟 main 同步（nixbot-flake-update.py:
+          # `method = baseMergeMethod if baseMergeBranch else None`），分支一直停在创建
+          # 时的那个 commit 上；而 main 侧的 `flake.lock`: Update PR 同时在改同一批
+          # input，两边 lock 的 narHash/rev 逐行不同 → git 合不动，PR 会以
+          # `merge of <sha> conflicts with base branch:` 失败（冲突文件只有 flake.lock）。
+          # 用 reset 而不是默认的 merge / rebase：这个分支归 nixbot 所有，merge 和
+          # rebase 都会在 lock 已经分岔时再次撞上同一批冲突（而 effect 里没人能解冲突），
+          # reset 是 `checkout -B flake-update main` + force push，结果确定且永远可合。
+          # 代价：分支上非 nixbot 的提交会被丢弃。
+          baseMergeBranch = "main";
+          baseMergeMethod = "reset";
           commitSummary = "flake.lock: update";
           # 等 required checks 通过后由 GitHub 自己 squash 合并；
           # 只在 github / gitea 上有效。
