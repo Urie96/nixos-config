@@ -116,24 +116,22 @@ let
   # 文件再 mv，避免读到半个路径。
   #
   # 刻意不设 `after`：不等局域网机器的 deploy-* 成功，merge 进 main 就放行。
-  mkPull =
-    name: drv:
-    {
-      "publish-${name}" = mkEffect {
-        name = "desired-state-${name}";
-        __hci_effect_mounts = builtins.toJSON {
-          "/var/lib/nixbot/desired-state" = "desired-state";
-        };
-        # 这台机器的 toplevel 没变就不重写（只看上一次**成功**的运行）。
-        when.changed.toplevel = "${drv}";
-        effectScript = ''
-          set -euo pipefail
-          dir=/var/lib/nixbot/desired-state
-          printf '%s\n' '${drv}' > "$dir/.${name}.new"
-          mv -f "$dir/.${name}.new" "$dir/${name}"
-        '';
+  mkPull = name: drv: {
+    "publish-${name}" = mkEffect {
+      name = "desired-state-${name}";
+      __hci_effect_mounts = builtins.toJSON {
+        "/var/lib/nixbot/desired-state" = "desired-state";
       };
+      # 这台机器的 toplevel 没变就不重写（只看上一次**成功**的运行）。
+      when.changed.toplevel = "${drv}";
+      effectScript = ''
+        set -euo pipefail
+        dir=/var/lib/nixbot/desired-state
+        printf '%s\n' '${drv}' > "$dir/.${name}.new"
+        mv -f "$dir/.${name}.new" "$dir/${name}"
+      '';
     };
+  };
 in
 {
   flake.herculesCI =
@@ -154,15 +152,13 @@ in
         # 下的文件名，必须和客户端 modules/features/pull-deploy.nix 里的
         # pullDeploy.machine 一致。
         // mkPull "devbox" self.legacyPackages.x86_64-linux.systemConfigs.devbox
-        // mkPull "work-macbook"
-          self.darwinConfigurations.work-macbook.config.system.build.toplevel
-        // mkPull "nix-on-droid"
-          self.legacyPackages.aarch64-linux.nixOnDroidConfigurations.default.activationPackage;
+        // mkPull "work-macbook" self.darwinConfigurations.work-macbook.config.system.build.toplevel
+        // mkPull "nix-on-droid" self.legacyPackages.aarch64-linux.nixOnDroidConfigurations.default.activationPackage;
       # ── 任务 2：每周更新所有 input ────────────────────────────────────
       onSchedule.flake-update = {
         when = {
-          dayOfWeek = [ "Sun" ];
-          hour = [ 8 ];
+          dayOfWeek = [ "Sat" ];
+          hour = [ 21 ];
         };
         outputs.effects.update = flakeUpdate {
           inherit (primaryRepo) forgeType;
