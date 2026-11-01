@@ -110,8 +110,12 @@
         # condition 限定只有默认分支的 effect 能拿到。宿主目录本身由下面的 tmpfiles
         # 创建，并在 nixbot.service 的 ReadWritePaths 里放开
         # （ProtectSystem = strict）。
+        #
+        # 刻意不放 nixbot 的 HOME（/var/lib/nixbot）里：那个目录是 0700，nginx
+        # （user nginx）无法穿过它，静态发文件时会直接 403 Permission denied。
+        # 这里用独立的 /var/lib/desired-state（0755），nginx 能读。
         effects.mountables.desired-state = {
-          source = "/var/lib/nixbot/desired-state";
+          source = "/var/lib/desired-state";
           readOnly = false;
           condition = "isDefaultBranch";
         };
@@ -181,6 +185,9 @@
         # nginx.enableACME = true;
       };
 
+      # 防止自己中断自己
+      systemd.services.nixbot.restartIfChanged = false;
+
       services.nginx.virtualHosts."nixbot.lubui.com" = {
         addSSL = true;
         useACMEHost = "lubui.com";
@@ -205,11 +212,11 @@
       # ReadWritePaths 负责在 ProtectSystem = strict 下放开写权限（列表选项，
       # 追加不会覆盖模块自己设的值）。
       systemd.tmpfiles.rules = [
-        "d /var/lib/nixbot/desired-state 0755 nixbot nixbot - -"
+        "d /var/lib/desired-state 0755 nixbot nixbot - -"
       ];
 
       systemd.services.nixbot.serviceConfig.ReadWritePaths = [
-        "/var/lib/nixbot/desired-state"
+        "/var/lib/desired-state"
       ];
 
       # 挂在已有缓存 vhost（modules/services/harmonia.nix）上：三台拉取式机器
@@ -219,7 +226,7 @@
       #   https://cache.lubui.com:8443/desired-state/<机器名>
       services.nginx.virtualHosts."cache.lubui.com".locations."/desired-state/" = {
         # alias 在 '/' 结尾的 location 里也必须以 '/' 结尾，否则 nginx 会拼错路径。
-        alias = "/var/lib/nixbot/desired-state/";
+        alias = "/var/lib/desired-state/";
         extraConfig = ''
           default_type text/plain;
           autoindex off;

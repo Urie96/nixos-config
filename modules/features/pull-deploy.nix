@@ -89,7 +89,8 @@ let
         pkgs.curl
         pkgs.coreutils
         pkgs.nix
-      ] ++ extraInputs;
+      ]
+      ++ extraInputs;
       text = ''
         state_url='${stateUrl}'
         current='${current}'
@@ -133,7 +134,12 @@ in
   # 用 LaunchDaemon 而不是 user agent：nix build --profile 和 activate 都要 root。
   # 后台激活会重启部分 launchd 服务，属预期行为。
   flake.darwinModules.pull-deploy =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.pullDeploy;
 
@@ -181,7 +187,12 @@ in
 
   # ── system-manager（devbox）──────────────────────────────────────────
   flake.sysModules.pull-deploy =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.pullDeploy;
 
@@ -190,7 +201,6 @@ in
         inherit (cfg) machine stateUrl;
         current = "/nix/var/nix/gcroots/system-manager-current";
         deployShell = ''
-          # 拉闭包（并行替代；toplevel 的 allowSubstitutes 不影响显式 store path）。
           nix build --no-link "$want"
           # 等价于 `system-manager switch` 的后两步，但用的是新 generation 自带的
           # engine（避免「旧 engine 激活新格式 generation」）。register 内部裸调
@@ -240,7 +250,12 @@ in
   # cron job。注意会话必须在（app 开着 + termux-wake-lock），新的 activation 也要
   # 下一个 session 才完全生效。
   flake.droidModules.pull-deploy =
-    { config, lib, pkgs, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     let
       cfg = config.pullDeploy;
 
