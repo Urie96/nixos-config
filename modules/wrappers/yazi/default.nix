@@ -1,3 +1,4 @@
+{ self, ... }:
 {
   flake.wrappers.yazi =
     {
@@ -21,6 +22,7 @@
             hash = "sha256-mWT0yF2iG9+gYEuNiffpM93POlBqY+QKdFh5jSAxYls=";
           };
           mkOfficialPlugin = name: "${officialPlugins}/${name}.yazi";
+          nur = self.inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system};
         in
         {
           zoom = mkOfficialPlugin "zoom";
@@ -31,6 +33,7 @@
           git = mkOfficialPlugin "git";
           full-border = mkOfficialPlugin "full-border";
           chmod = mkOfficialPlugin "chmod";
+          preview-bin = "${nur.preview}/preview-bin.yazi";
         };
 
       # nix-wrapper-modules 的 yazi 模块只通过 constructFiles 生成 *.toml，没有提供 init.lua 的 option。
@@ -160,9 +163,15 @@
 
         plugin = {
           preloaders = [ ];
+          prepend_previewers = [
+            {
+              run = "preview-bin";
+              mime = "image/fuji-raf";
+            }
+          ];
           append_previewers = [
             {
-              run = ''piper -- ${pkgs.writeShellScript "preview" (builtins.readFile ./scripts/preview)} --path "$1" --width $w --height $h'';
+              run = "preview-bin";
               url = "*";
             }
           ];
@@ -197,8 +206,16 @@
 
   # 安装入口：modules/base.nix 里 `imports = with self.<class>; [ yazi ]` 引用。
   # 通用的 install 模块只为声明 `wrappers.yazi.*` 选项，真正落地靠 enable 打开。
-  flake.nixosModules.yazi = { wrappers.yazi.enable = true; };
-  flake.darwinModules.yazi = { wrappers.yazi.enable = true; };
-  flake.sysModules.yazi = { wrappers.yazi.enable = true; };
-  flake.droidModules.yazi = { wrappers.yazi.enable = true; };
+  flake.nixosModules.yazi = {
+    wrappers.yazi.enable = true;
+  };
+  flake.darwinModules.yazi = {
+    wrappers.yazi.enable = true;
+  };
+  flake.sysModules.yazi = {
+    wrappers.yazi.enable = true;
+  };
+  flake.droidModules.yazi = {
+    wrappers.yazi.enable = true;
+  };
 }
