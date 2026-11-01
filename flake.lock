@@ -707,14 +707,17 @@
     },
     "nur-packages": {
       "inputs": {
+        "nixbot": [
+          "nixbot"
+        ],
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1793251165,
-        "narHash": "sha256-zMsIB9zu64IVSmsJteK6QDfMA6bxshYbgb3O87KantE=",
+        "lastModified": 1793547917,
+        "narHash": "sha256-oRnQNctlFuuyEQv1RlvMEZB0H9OAgNUF7yEFViJEcnc=",
         "owner": "Urie96",
         "repo": "nur-packages",
-        "rev": "f0018efd64e61529bf34029118a7030c4787b67f",
+        "rev": "10abe7a9c99f3abef7f5311a051deb1cefbcdec1",
         "type": "github"
       },
       "original": {

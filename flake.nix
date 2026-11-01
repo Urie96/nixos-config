@@ -33,7 +33,7 @@
     disko.inputs.nixpkgs.follows = "nixpkgs";
 
     nur-packages.url = "github:Urie96/nur-packages";
-    # nur-packages.inputs.nixpkgs.follows = "nixpkgs";
+    nur-packages.inputs.nixbot.follows = "nixbot";
 
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";

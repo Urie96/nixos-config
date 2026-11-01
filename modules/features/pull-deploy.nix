@@ -223,10 +223,6 @@ in
         # systemd 对已经在跑的 oneshot 再触发 start 是 no-op，不会并发，不需要锁。
         systemd.services.pull-deploy = {
           script = "${pullDeploy}/bin/pull-deploy";
-          # 失败后 6 小时内不再尝试，免得反复激活半个状态。这两个是 [Unit] 级别的
-          # 选项（所以不写在 serviceConfig 里）；成功一次计数就会清零。
-          startLimitIntervalSec = 6 * 60 * 60;
-          startLimitBurst = 1;
           serviceConfig = {
             Type = "oneshot";
             User = "root";
@@ -246,7 +242,7 @@ in
 
   # ── nix-on-droid ─────────────────────────────────────────────────────
   #
-  # 任务本身交给 modules/features/cron.nix（supercronic + runit），这里只声明一个
+  # 任务本身交给 modules/options/cron.nix（supercronic + runit），这里只声明一个
   # cron job。注意会话必须在（app 开着 + termux-wake-lock），新的 activation 也要
   # 下一个 session 才完全生效。
   flake.droidModules.pull-deploy =
@@ -272,10 +268,10 @@ in
           nix build --no-link "$want"
           # activate 自己会 nix-env --profile /nix/var/nix/profiles/nix-on-droid --set。
           "$want/activate"
-          # 新 generation 的 crontab 是新的 store path，而 supercronic 是长驻进程，
-          # 要重启才会用上。放到新 session 里并延后几秒：直接重启会把正在跑这次任务
-          # 的 supercronic（以及它底下这个脚本）一起杀掉，后面的回验就白跑了。
-          setsid sh -c 'sleep 5; ${config.runit.settings.packageWrapped}/bin/sv restart cron' >/dev/null 2>&1 &
+          # 这里不需要（也不该）重启 cron：crontab 走稳定的 /etc 路径，activation 的
+          # cronReload 步骤会 `sv 2 cron` 让 supercronic 重读；USR2 只停调度、等本任务
+          # 结束后才重读，不会杀掉正在跑这次激活的 pull-deploy。详见
+          # modules/options/cron.nix 顶部注释。
         '';
       };
     in
