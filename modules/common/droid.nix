@@ -12,7 +12,6 @@
       environment.sessionVariables = {
         SHELL = config.user.shell;
         EDITOR = "nvim";
-        MANPAGER = "nvim +Man!";
         HF_ENDPOINT = "https://hf-mirror.com";
       };
 
