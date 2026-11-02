@@ -17,6 +17,19 @@
 
             rcmd + ralt + rctrl - i | cmd + ctrl - q
 
+            # zen browser: cmd+l / cmd+j 切到下一个 / 上一个标签页
+            # skhd 的进程名只做大小写不敏感的全等比较（不是子串），而 Zen 的
+            # 进程名就是 .app 的包名，所以把 beta/stable 几种可能的写法都列上。
+            .define zen_apps ["Zen Browser (Beta)", "Zen Browser", "Zen"]
+
+            cmd - l [
+              @zen_apps | ctrl - tab
+            ]
+
+            cmd - j [
+              @zen_apps | ctrl + shift - tab
+            ]
+
             alt - space : yabai -m space --balance
             shift + alt - a : yabai -m window --space 1 --focus
             shift + alt - s : yabai -m window --space 2 --focus

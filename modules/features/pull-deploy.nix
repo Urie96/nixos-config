@@ -202,12 +202,18 @@ in
         current = "/nix/var/nix/gcroots/system-manager-current";
         deployShell = ''
           nix build --no-link "$want"
-          export PATH="$PATH:/usr/bin:/bin" # system-manager会检测sudo命令
-          # 等价于 `system-manager switch` 的后两步，但用的是新 generation 自带的
-          # engine（避免「旧 engine 激活新格式 generation」）。register 内部裸调
-          # nix-env，所以上面的 runtimeInputs 必须带 nix。
-          "$want/bin/system-manager-engine" register --store-path "$want"
+          # 宿主工具必须优先：system-manager 的激活流程会从 PATH 调
+          # systemd-tmpfiles，而 nixpkgs 的 systemd 262 在 devbox 的 5.4 内核上会
+          # 报 EUNATCH（Protocol driver not attached）；宿主自带的 systemd 252 正常。
+          # 同时 pre-activation assertion 也需要宿主的 /usr/bin/sudo。
+          export PATH="/usr/bin:/bin:$PATH"
+          # 先 activate 再 register：register 会把 gcroot/system-manager-current
+          # 指到新 generation，而 pull-deploy 用这个链接判断「是否已部署」。若先
+          # register 后 activate 失败，下次比较会误以为已经切换完成而不再重试。
+          # activate 本身幂等，register 失败的话下一轮重跑也没问题。
           "$want/bin/system-manager-engine" activate --store-path "$want"
+          # register 内部裸调 nix-env，所以上面的 runtimeInputs 必须带 nix。
+          "$want/bin/system-manager-engine" register --store-path "$want"
         '';
       };
     in
@@ -224,6 +230,11 @@ in
         # systemd 对已经在跑的 oneshot 再触发 start 是 no-op，不会并发，不需要锁。
         systemd.services.pull-deploy = {
           script = "${pullDeploy}/bin/pull-deploy";
+          # 激活过程会重写 /etc/systemd/system/pull-deploy.service。默认情况下
+          # system-manager 会重启内容变化的 unit，从而把正在执行激活的 pull-deploy
+          # 自己 TERM 掉，激活中途夭折。这里不跟随重启；新 unit 文件已经生效，
+          # 下一个 timer 周期就会用新脚本。
+          restartIfChanged = false;
           serviceConfig = {
             Type = "oneshot";
             User = "root";
