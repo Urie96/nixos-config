@@ -262,8 +262,6 @@ in
         ++ (with inputs'.nur-packages.packages; [
           mac-ocr
           cliclick
-
-          tinycast
         ]);
 
       # homebrew.casks = [ "arc" ];

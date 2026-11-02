@@ -49,6 +49,7 @@
         imports = with self.homeModules; [
           full
           zen-browser
+          tinycast
         ];
       };
     };
