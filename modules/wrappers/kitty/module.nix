@@ -175,6 +175,25 @@
             见 <https://sw.kovidgoyal.net/kitty/kittens/custom/>。
           '';
         };
+
+        shaders = mkOption {
+          type = types.attrsOf contentValueType;
+          default = { };
+          example = literalExpression ''
+            {
+              "my-shader.pipeline" = ./config/shaders/my-shader.pipeline;
+              "my-shader.slang" = ./config/shaders/my-shader.slang;
+            }
+          '';
+          description = ''
+            自定义 shader：属性名是相对于 `$out/kittyConfig/shaders/` 的路径。
+            kitty 解析 {option}`settings.custom_shaders` 时先在这个目录里找
+            `<name>.pipeline`，再按 pipeline 所在的目录找它引用的 `<name>.slang`，
+            最后才回落到 kitty 自带的 shader；所以同名文件可以覆盖内置 shader。
+
+            见 <https://sw.kovidgoyal.net/kitty/custom-shaders/>。
+          '';
+        };
       };
 
       config = {
@@ -231,7 +250,8 @@
                 ${toKittyConfig config.quickAccessTerminal}${config.quickAccessTerminalExtraConfig}
               ''
             )
-        // lib.concatMapAttrs file config.scripts;
+        // lib.concatMapAttrs file config.scripts
+        // lib.concatMapAttrs (name: content: file "shaders/${name}" content) config.shaders;
       };
     };
 }

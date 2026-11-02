@@ -120,6 +120,14 @@
         "select_window.py" = ./scripts/select_window.py;
       };
 
+      # 自定义 shader：内置的 cursor-trail-lightning 把闪电存活时间写死成
+      # static const float DURATION = 0.14，没有开放成选项，所以复制一份改名、
+      # 调大 DURATION，再把 settings.custom_shaders 指向副本。
+      # shaders = {
+      #   "cursor-trail-lightning-slow.pipeline" = ./config/shaders/cursor-trail-lightning-slow.pipeline;
+      #   "cursor-trail-lightning-slow.slang" = ./config/shaders/cursor-trail-lightning-slow.slang;
+      # };
+
       # tmux / vi 里运行时对部分按键做特殊处理（原 keymap.conf 的 TMUX 段落），
       # 这部分不做 nix 化，直接作为原始内容追加
       extraConfig = ''
@@ -175,8 +183,12 @@
         enabled_layouts = "grid,stack";
         window_padding_width = 0;
         show_hyperlink_targets = true;
-        custom_shaders = "cursor-trail-lightning";
+        custom_shaders = "cursor-trail-lightning cursor-trail-blaze";
         cursor_trail = 3;
+        # 第一个值是最快衰减（各角靠近光标时的速度），第二个是最慢衰减。
+        # 第二个值决定光标轨迹动画的重绘时长：kitty 只在这段时间内持续重绘，
+        # 动画结束后不再跑 shader，闪电会停在中途。要配合 shader 里的 DURATION，
+        # slow 值取到比 DURATION 大一些（0.8 大约能撑住 0.4~0.5s 的闪电）。
         cursor_trail_decay = "0.1 0.4";
         cursor_trail_start_threshold = 5;
         background_opacity = 0.75;
@@ -187,6 +199,10 @@
     };
 
   # 安装入口：desktop.nix（nixos）/ darwin full 里引用。kitty 目前只有这两个 class 装。
-  flake.nixosModules.kitty = { wrappers.kitty.enable = true; };
-  flake.darwinModules.kitty = { wrappers.kitty.enable = true; };
+  flake.nixosModules.kitty = {
+    wrappers.kitty.enable = true;
+  };
+  flake.darwinModules.kitty = {
+    wrappers.kitty.enable = true;
+  };
 }
