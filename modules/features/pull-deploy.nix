@@ -202,6 +202,7 @@ in
         current = "/nix/var/nix/gcroots/system-manager-current";
         deployShell = ''
           nix build --no-link "$want"
+          export PATH="$PATH:/usr/bin:/bin" # system-manager会检测sudo命令
           # 等价于 `system-manager switch` 的后两步，但用的是新 generation 自带的
           # engine（避免「旧 engine 激活新格式 generation」）。register 内部裸调
           # nix-env，所以上面的 runtimeInputs 必须带 nix。
