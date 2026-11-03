@@ -145,8 +145,7 @@ in
       pullDeploy = mkPullDeploy {
         inherit pkgs;
         inherit (cfg) machine stateUrl;
-        # profile 就是 activate-system 开机时读的那个链接。
-        current = config.system.profile;
+        current = "/run/current-system";
         deployShell = ''
           # toplevel 是可替代的：顺便用 --profile 把它登记成当前 profile。
           nix build --no-link --profile '${config.system.profile}' "$want"
