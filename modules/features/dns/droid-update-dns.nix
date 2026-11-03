@@ -11,7 +11,7 @@
         installPhase = ''
           runHook preInstall
           mkdir -p $out/bin
-          install -m 755 update-dns $out/bin/update-dns
+          install -m 755 update-dns.py $out/bin/update-dns
           runHook postInstall
         '';
       };

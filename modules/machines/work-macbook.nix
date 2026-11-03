@@ -24,6 +24,8 @@
         pull-deploy
       ];
 
+      nix.linux-builder.enable = true;
+
       pullDeploy = {
         enable = true;
         machine = "work-macbook";
