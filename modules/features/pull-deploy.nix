@@ -21,7 +21,6 @@
 #     toplevel 标成 allowSubstitutes = false 的目标也照样能拉；
 #   · 缓存里万一真的没有，它会退化成在本地构建，而不是直接失败。
 # darwin 多一个 `--profile`：拉下来的同时把它登记成当前 profile。
-{ self, ... }:
 let
   # 三个 class 共用的选项。机器名显式写（devbox / work-macbook / nix-on-droid），
   # 不猜 hostname：清单的 key 就是它。
@@ -163,7 +162,7 @@ in
 
       options.pullDeploy.interval = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 3600;
+        default = 3600 * 8;
         description = "检查间隔（秒，launchd StartInterval）。";
       };
 
