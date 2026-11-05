@@ -31,6 +31,8 @@
       ntfy
       pairdrop
       uptime-kuma
+      telegraf
+      victoriametrics
       immich
       jellyfin-server
       love-yue
