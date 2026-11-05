@@ -43,6 +43,7 @@
       apprise-server
       # llm-api-proxy
       postgresql
+      lldap
       authelia
       audiobookshelf
       searx

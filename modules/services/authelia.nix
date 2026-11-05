@@ -20,6 +20,21 @@
           '';
         };
 
+        backend = lib.mkOption {
+          type = lib.types.enum [
+            "file"
+            "ldap"
+          ];
+          default = "ldap";
+          description = ''
+            账号后端。`file` 是写死在 clan vars 生成出来的 YAML 里；`ldap` 走 lldap。
+
+            切换顺序不能反：先把 lldap 部署起来、确认 urie 已经在里面，再把这里
+            改成 `ldap` 并部署。反过来做的话 authelia 启动时 bind 不到账号，
+            会直接以 fatal 退出并反复重启。
+          '';
+        };
+
         nginxForwardAuth = lib.mkOption {
           type = lib.types.str;
           readOnly = true;
@@ -67,10 +82,15 @@
       config = {
         # Vars generator for authelia secrets
         clan.core.vars.generators.authelia = {
-          files.jwt-secret.owner = "authelia-main";
-          files.storage-encryption-key.owner = "authelia-main";
-          files.session-secret.owner = "authelia-main";
-          files.users-database.owner = "authelia-main";
+          files = {
+            jwt-secret.owner = "authelia-main";
+            storage-encryption-key.owner = "authelia-main";
+            session-secret.owner = "authelia-main";
+          }
+          # 用户库只在 file 后端下存在；ldap 后端下账号归 lldap 管。
+          // lib.optionalAttrs (cfg.backend == "file") {
+            users-database.owner = "authelia-main";
+          };
 
           runtimeInputs = with pkgs; [
             coreutils
@@ -78,8 +98,10 @@
             gnused
           ];
 
-          prompts.password.description = "Password for Authelia user urie";
-          prompts.password.type = "hidden";
+          prompts = lib.optionalAttrs (cfg.backend == "file") {
+            password.description = "Password for Authelia user urie";
+            password.type = "hidden";
+          };
 
           script = ''
             gensecret() {
@@ -88,7 +110,8 @@
             gensecret > "$out/jwt-secret"
             gensecret > "$out/storage-encryption-key"
             gensecret > "$out/session-secret"
-
+          ''
+          + lib.optionalString (cfg.backend == "file") ''
             password_hash="$(${pkgs.authelia}/bin/authelia crypto hash generate argon2 --password "$(cat "$prompts/password")" --no-confirm | sed -n 's/^Digest: //p')"
             cat > "$out/users-database" <<EOF
             users:
@@ -112,11 +135,50 @@
             sessionSecretFile = config.clan.core.vars.generators.authelia.files.session-secret.path;
           };
 
+          # LDAP 的 bind 密码不能写进 settings（会进 nix store），走 _FILE。
+          # 用专用服务账号 uid=authelia（不是你的个人账号）：这样改自己的密码不会
+          # 把 authelia 弄挂，它泄露了也不在 lldap_admin 里。
+          # 注意：轮换 lldap-service/bind-password 后必须同时去 lldap UI 改密码，
+          # 因为 force_ldap_user_pass_reset 只作用于 bootstrap 账号。
+          #
+          # 跟 jwt/storage/session 一样走 systemd credentials：clan 生成的 var
+          # 是 root:root 0400，authelia 服务用户根本没权限读，只有 systemd 在
+          # 启动时以 root 把它拷进 %d 才能拿到。（lldap 那边也是这个机制。）
+          environmentVariables = lib.mkIf (cfg.backend == "ldap") {
+            AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE = "%d/ldapPasswordFile";
+          };
+
           settings = {
             theme = "dark";
 
-            authentication_backend.file.path =
-              config.clan.core.vars.generators.authelia.files.users-database.path;
+            authentication_backend =
+              if cfg.backend == "ldap" then
+                {
+                  ldap = {
+                    implementation = "lldap";
+                    address = "ldap://127.0.0.1:3890";
+                    base_dn = config.services.lldap.settings.ldap_base_dn;
+                    # 专用服务账号，不是你的个人账号：改自己密码不会影响它，
+                    # 它也不在 lldap_admin 里。需要加进 lldap_password_manager 组，
+                    # 门户里的「修改密码」才能改到别人。
+                    user = "uid=authelia,ou=people,dc=lubui";
+
+                    # username 是 authelia 里绑身份用的键：session、TOTP、
+                    # passkey、OIDC sub 都按它存，定下之后不要再改。
+                    # lldap 的默认 users_filter 同时匹配 uid 和 mail，所以这里
+                    # 用 uid 当身份，登录时仍然可以输邮箱。
+                    attributes = {
+                      username = "uid";
+                      display_name = "cn";
+                      mail = "mail";
+                    };
+                  };
+                }
+              else
+                {
+                  file.path = config.clan.core.vars.generators.authelia.files.users-database.path;
+                };
+
             access_control.default_policy = "one_factor";
 
             session = {
@@ -136,6 +198,14 @@
             notifier.filesystem.filename = "/var/lib/authelia-main/notifications.txt";
           };
         };
+
+        # 注意这行必须在 services.authelia.instances.main 外面，否则会变成
+        # instances.main.systemd.* 把整棵树搞坏。
+        systemd.services.authelia-main.serviceConfig.LoadCredential = lib.mkIf (cfg.backend == "ldap") (
+          lib.mkAfter [
+            "ldapPasswordFile:${config.clan.core.vars.generators.lldap-service.files.bind-password.path}"
+          ]
+        );
 
         services.nginx.virtualHosts."auth.lubui.com" = {
           addSSL = true;
