@@ -293,77 +293,51 @@
     '';
   };
 
-  services.nginx.virtualHosts."singbox.lubui.com" =
-    assert lib.assertMsg config.services.nginx.sso.enable "sso must be enabled";
-    {
-      addSSL = true;
-      useACMEHost = "lubui.com";
+  services.nginx.virtualHosts."singbox.lubui.com" = {
+    addSSL = true;
+    useACMEHost = "lubui.com";
 
-      extraConfig = ''
-        auth_request /sso-auth;
-        error_page 401 = @error401;
-      '';
+    extraConfig = config.my.authelia.nginxForwardAuth;
 
-      locations = {
-        "= /redirect" = {
-          priority = 10;
-          extraConfig = ''
-            auth_request /sso-auth;
-            error_page 401 = @error401;
-            # Automatically renew SSO cookie on request
-            auth_request_set $cookie $upstream_http_set_cookie;
-            add_header Set-Cookie $cookie;
+    locations = {
+      "= /redirect" = {
+        priority = 10;
+        extraConfig = ''
+          # 每次请求顺手续期 authelia 的 session cookie
+          auth_request_set $cookie $upstream_http_set_cookie;
+          add_header Set-Cookie $cookie;
 
-            try_files _ @redirect;
-          '';
-        };
-        "@error401" = {
-          priority = 1;
-          extraConfig = ''
-            return 302 https://sso.lubui.com:8443/login?go=$scheme://$http_host$request_uri;
-          '';
-        };
-        "@redirect" = {
-          extraConfig = ''
-            include ${config.clan.core.vars.generators.clash_api.files.nginx_set_secret.path};
-            return 302 /ui/?hostname=$scheme://$host&port=$server_port&secret=$clash_api_secret;
-          '';
-        };
-        "/ui/" = {
-          priority = 100;
-          alias =
-            let
-              yacd = pkgs.fetchzip {
-                url = "https://github.com/haishanh/yacd/releases/download/v0.3.8/yacd.tar.xz";
-                hash = "sha256-YrqBRRyKtIKAzPTNp6YfTC8oGI4WTqQ1FohcaubD8XM=";
-              };
-            in
-            "${yacd}/"; # 尾部/至关重要
-          tryFiles = "$uri $uri/ /index.html";
-          # index = "index.html index.htm";
-        };
-        "/" = {
-          priority = 1000;
-          proxyPass = "http://${config.services.sing-box.settings.experimental.clash_api.external_controller}";
-          proxyWebsockets = true;
-        };
-        "/sso-auth" = {
-          priority = 11;
-          extraConfig = ''
-            internal;
-            proxy_pass_request_body off;
-            proxy_set_header Content-Length "";
-            proxy_pass http://127.0.0.1:${toString config.services.nginx.sso.configuration.listen.port}/auth;
-            # Set custom information for ACL matching: Each one is available as
-            # a field for matching: X-Host = x-host, ...
-            proxy_set_header X-Origin-URI $request_uri;
-            proxy_set_header X-Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-          '';
-        };
+          try_files _ @redirect;
+        '';
+      };
+      "@redirect" = {
+        extraConfig = ''
+          include ${config.clan.core.vars.generators.clash_api.files.nginx_set_secret.path};
+          return 302 /ui/?hostname=$scheme://$host&port=$server_port&secret=$clash_api_secret;
+        '';
+      };
+      "/ui/" = {
+        priority = 100;
+        alias =
+          let
+            yacd = pkgs.fetchzip {
+              url = "https://github.com/haishanh/yacd/releases/download/v0.3.8/yacd.tar.xz";
+              hash = "sha256-YrqBRRyKtIKAzPTNp6YfTC8oGI4WTqQ1FohcaubD8XM=";
+            };
+          in
+          "${yacd}/"; # 尾部/至关重要
+        tryFiles = "$uri $uri/ /index.html";
+        # index = "index.html index.htm";
+      };
+      "/" = {
+        priority = 1000;
+        proxyPass = "http://${config.services.sing-box.settings.experimental.clash_api.external_controller}";
+        proxyWebsockets = true;
+      };
+      "/authelia" = {
+        priority = 11;
+        extraConfig = config.my.authelia.nginxVerifyLocation;
       };
     };
-
+  };
 }

@@ -31,17 +31,19 @@
       ntfy
       pairdrop
       uptime-kuma
+      telegraf
+      victoriametrics
       immich
       jellyfin-server
       love-yue
       interval-web
-      sso
       webdav
       harmonia
       cache-push
       apprise-server
       # llm-api-proxy
       postgresql
+      lldap
       authelia
       audiobookshelf
       searx
