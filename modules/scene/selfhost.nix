@@ -37,7 +37,6 @@
       jellyfin-server
       love-yue
       interval-web
-      sso
       webdav
       harmonia
       cache-push

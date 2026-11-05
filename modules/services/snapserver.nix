@@ -11,7 +11,7 @@
         };
       };
 
-      # TODO: sso protect
+      # TODO: authelia protect（参考 esphome.nix / _singbox-home.nix）
       services.nginx.virtualHosts."snap.lubui.com" = {
         addSSL = true;
         useACMEHost = "lubui.com";
