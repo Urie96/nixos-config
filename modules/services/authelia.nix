@@ -48,6 +48,45 @@
           '';
         };
 
+        # 带身份的 forward-auth：跟 nginxForwardAuth 一样挂在 vhost 的 server 级
+        # extraConfig，但把 authelia /api/verify 响应里的 Remote-User /
+        # Remote-Groups 取出来存成 nginx 变量，供 nginxSsoUserHeaders 透传给后端。
+        #
+        # 单挂这个只解决「挡住没登录的人」；要让下游真的免登录，后端得自己信任
+        # 这些头（例如 grafana 的 auth.proxy），否则用户还是会被问第二遍密码。
+        nginxSsoConfig = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          description = ''
+            带身份的 forward-auth 片段，放在 vhost 的 server 级 `extraConfig` 里。
+            配合 `/authelia` location + `nginxSsoUserHeaders` 使用。
+          '';
+          default = ''
+            auth_request /authelia;
+            auth_request_set $authelia_user $upstream_http_remote_user;
+            auth_request_set $authelia_groups $upstream_http_remote_groups;
+            error_page 401 =302 ${cfg.url}/?rd=$scheme://$http_host$request_uri;
+          '';
+        };
+
+        # 必须放在 location 里而不是 server 级：location 自己写了 proxy_set_header
+        # （recommendedProxySettings 就会写）之后，server 级的 proxy_set_header
+        # 会被整体覆盖，头就丢了。
+        #
+        # 没跑 auth_request 的 location 里这两个变量是空字符串，等于传给下游一个
+        # 空头 —— 这是防伪造的关键，不要图省事直接手写成用户名。
+        nginxSsoUserHeaders = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          description = ''
+            需要身份的 location 里的 `proxy_set_header` 片段，配合 `nginxSsoConfig`。
+          '';
+          default = ''
+            proxy_set_header Remote-User $authelia_user;
+            proxy_set_header Remote-Groups $authelia_groups;
+          '';
+        };
+
         nginxVerifyLocation = lib.mkOption {
           type = lib.types.str;
           readOnly = true;
