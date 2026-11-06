@@ -1,0 +1,201 @@
+{
+  "uid": "systemd-units",
+  "title": "systemd 单元状态",
+  "tags": ["systemd", "monitoring"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "failed 单元数",
+      "description": "systemd_units_active_code == 3 的单元个数",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(systemd_units_active_code == 3) or vector(0)",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "active 单元数",
+      "description": "active_code == 0 的单元数（service + timer，不含 user 单元）",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(systemd_units_active_code == 0) or vector(0)",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "指标新鲜度",
+      "description": "最近一次采到 systemd_units_active_code 距今多少秒；telegraf 挂了这里会一直涨（对应告警 SystemdUnitsProbeMissing）",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - max(timestamp(systemd_units_active_code))",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 300 },
+              { "color": "red", "value": 900 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "failed 单元",
+      "description": "active_code: 0=active 1=reloading 2=inactive 3=failed 4=activating 5=deactivating",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "systemd_units_active_code == 3",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "user": true, "load": true },
+            "renameByName": {
+              "name": "单元",
+              "active": "状态",
+              "sub": "子状态",
+              "host": "主机",
+              "Value": "code"
+            }
+          }
+        }
+      ],
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "单元", "desc": false }] },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "重启次数（前 10）",
+      "description": "systemd 的 NRestarts（只有 service 单位有），持续增长说明在崩溃循环，对应告警 SystemdServiceRestartLoop",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, systemd_units_restarts > 0)",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "user": true,
+              "load": true,
+              "active": true,
+              "sub": true
+            },
+            "renameByName": { "name": "单元", "host": "主机", "Value": "重启次数" }
+          }
+        }
+      ],
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "重启次数", "desc": true }] },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "单元状态分布",
+      "description": "按 active 状态聚合的单元数量；failed 曲线长期不为 0 就是有东西一直起不来",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count by (active) (systemd_units_active_code)",
+          "legendFormat": "{{active}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "custom": { "drawStyle": "line", "fillOpacity": 10 }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

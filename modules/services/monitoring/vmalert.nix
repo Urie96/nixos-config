@@ -42,6 +42,37 @@
               }
             ];
           }
+
+          # systemd 单元监控的补充规则。
+          # “单元进入 failed 状态” 那条来自 srvos 默认规则（SystemdServiceFailed，
+          # 在 srvos-rules.nix 里覆盖文案），采集侧在 telegraf.nix 的 inputs.systemd_units。
+          # 这里只补 srvos 没覆盖的两种：
+          #   - 崩溃循环：Restart= 会被 systemd 一直拉起，active 状态反复在
+          #     activating/active 之间跳，永远不会停在 failed，所以 failed 那条抓不到
+          #   - 采集本身挂了：没有数据时所有规则都安静地不报
+          {
+            name = "systemd";
+            rules = [
+              {
+                alert = "SystemdServiceRestartLoop";
+                # systemd_units_restarts 只有 details=true 的那条（service）输入才有，
+                # 所以这里不用按 .service 过滤（要写正则反而得用 \\.，PromQL 字符串走 Go 转义）
+                expr = "changes(systemd_units_restarts[15m]) > 3";
+                for = "5m";
+                labels.severity = "warning";
+                annotations.summary = "systemd 服务在崩溃循环";
+                annotations.description = "{{$labels.host}} 上的 {{$labels.name}} 15 分钟内重启超过 3 次，看 journalctl -u {{$labels.name}}。";
+              }
+              {
+                alert = "SystemdUnitsProbeMissing";
+                expr = "absent(systemd_units_active_code)";
+                for = "15m";
+                labels.severity = "warning";
+                annotations.summary = "systemd 单元指标没有数据";
+                annotations.description = "telegraf 的 systemd_units 输入超过 15 分钟没有上报，检查 telegraf 服务是否正常（systemctl status telegraf）以及它能不能读 system bus。";
+              }
+            ];
+          }
         ];
       };
 

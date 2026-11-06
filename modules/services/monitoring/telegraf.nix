@@ -14,6 +14,7 @@
           #   x509_cert_expiry{type="leaf",site="lubui.com"} / 86400   # 证书剩余天数
           #   http_response_result_code{site="lubui.com"}              # 0 = 请求成功
           #   http_response_response_time{site="lubui.com"}            # 响应耗时（秒）
+          #   systemd_units_active_code != 0                           # 非 active 的 systemd 单元
           #
           # 注意 interval **不要**写成小时级：telegraf 不会在启动时先采一次，
           # 第一个采样点要等满一个 interval 才出现（实测 6h 的插件启动 8s 后指标数是 0）。
@@ -62,6 +63,24 @@
               timeout = "10s";
               interval = "1h";
               tags.site = "home.lubui.com";
+            }
+          ];
+
+          # 系统级 systemd 单元状态：
+          #   systemd_units_active_code{name="jellyfin.service"}   # 0=active 2=inactive 3=failed
+          #   systemd_units_restarts{name="jellyfin.service"}      # 重启次数（details 模式才有）
+          # 走 system bus，telegraf 以 telegraf 用户读只读属性即可，不需要额外权限。
+          # 一个 [[inputs.systemd_units]] 只能采一种 unittype，所以这里写两条；
+          # 想加 socket/mount 之类照抄一条改 unittype 即可。
+          systemd_units = [
+            {
+              unittype = "service";
+              # details 模式下额外给出 restarts/pid/mem 等字段，
+              # 崩溃重启循环的告警（vmalert 里的 SystemdServiceRestartLoop）依赖它
+              details = true;
+            }
+            {
+              unittype = "timer";
             }
           ];
 

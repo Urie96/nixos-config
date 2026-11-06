@@ -17,7 +17,6 @@
         full
         server
         special-day-notify
-        systemd-monitor
         router
         singbox-home
         # 这台机器也是构建机（x86 leg 的 runner），构建的包也在构建时签名
