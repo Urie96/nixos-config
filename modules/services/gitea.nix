@@ -51,9 +51,14 @@
           # 所以保持 authelia 的默认 client_secret_basic 最省事。
           token_endpoint_auth_method = "client_secret_basic";
           # gitea 目前不发 PKCE（goth 的 openidConnect provider 没实现），
-          # 但把方法定成 S256：将来它加上了也不会因为 authelia 默认的 plain 而失败。
+          # 所以这两个都不能碰。注意 authelia 4.39 的 internal/oidc/client.go 里是
+          #   RequirePKCE: config.RequirePKCE || config.PKCEChallengeMethod != ""
+          # 也就是只要 pkce_challenge_method 非空，就等于强制 PKCE——设成 S256
+          # 并不会"只是把方法定好"，反而会让不带 code_challenge 的 gitea 在
+          # authorize 阶段收到 "Clients must include a 'code_challenge'"。
+          # 全局 enforce_pkce 默认 public_clients_only，而这里 public = false，
+          # 所以留空就是完全不强制。
           require_pkce = false;
-          pkce_challenge_method = "S256";
           redirect_uris = [ oidcCallback ];
           scopes = [
             "openid"
