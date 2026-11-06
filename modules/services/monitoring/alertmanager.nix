@@ -19,6 +19,7 @@
             receiver = "ntfy";
             group_by = [
               "alertname"
+              "site"
               "host"
             ];
             group_wait = "10s";
@@ -53,7 +54,7 @@
           # srvos 的默认规则只写 annotations.description（没有 summary），
           # 所以标题不能用默认模板的 summary，否则通知标题是空的。
           ntfy.notification.templates = {
-            title = ''{{ if eq .Status "resolved" }}[恢复] {{ else }}[告警] {{ end }}{{ index .Labels "alertname" }}{{ with (or (index .Labels "host") (index .Labels "instance")) }} ({{ . }}){{ end }}'';
+            title = ''{{ if eq .Status "resolved" }}[恢复] {{ else }}[告警] {{ end }}{{ index .Labels "alertname" }}{{ with (or (index .Labels "site") (index .Labels "host") (index .Labels "instance")) }} ({{ . }}){{ end }}'';
             description = ''{{ with index .Annotations "summary" }}{{ . }}{{ "\n" }}{{ end }}{{ index .Annotations "description" }}'';
           };
 

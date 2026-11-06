@@ -21,11 +21,6 @@
             domain = "grafana.lubui.com";
             # 走 unix socket 时 grafana 不知道外部协议/端口
             root_url = "https://grafana.lubui.com:8443";
-
-            # Alternatively, if you want to server Grafana from a subpath:
-            # domain = "your.domain";
-            # root_url = "https://your.domain/grafana/";
-            # serve_from_sub_path = true;
           };
           users = {
             default_language = "zh-Hans";

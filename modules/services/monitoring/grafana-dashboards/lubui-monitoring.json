@@ -1,42 +1,119 @@
 {
   "uid": "lubui-monitoring",
   "title": "Lubui 网站监控",
-  "tags": ["lubui", "monitoring"],
+  "tags": [
+    "lubui",
+    "monitoring"
+  ],
   "timezone": "browser",
-  "schemaVersion": 39,
-  "version": 1,
+  "schemaVersion": 41,
+  "version": 2,
   "refresh": "1m",
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site",
+        "label": "站点",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "victoriametrics"
+        },
+        "query": {
+          "query": "label_values(http_response_result_code, site)",
+          "refId": "site"
+        },
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "options": [],
+        "regex": "",
+        "sort": 1,
+        "hide": 0,
+        "skipUrlSync": false,
+        "description": "从 http_response_result_code 的 site label 自动发现站点。新增站点只要在 modules/services/monitoring/telegraf.nix 里加一段 http_response。"
+      }
+    ]
+  },
   "panels": [
     {
       "id": 1,
       "type": "stat",
-      "title": "TLS 证书剩余天数 (leaf)",
-      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+      "title": "区间可用率",
+      "description": "当前时间范围内 成功请求数 / 总请求数。分母只统计有数据的时刻，所以 telegraf 整体挂掉不会拉低这个数字（那种情况看下面的 up 面板）。",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
         {
           "refId": "A",
-          "expr": "min by (host) (x509_cert_expiry{type=\"leaf\"}) / 86400",
-          "legendFormat": "{{host}}"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "expr": "100 * (1 - avg_over_time((max by (site) (http_response_result_code) > bool 0)[$__range:1m]))",
+          "legendFormat": "{{site}}",
+          "instant": true,
+          "range": false
         }
       ],
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "auto"
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "d",
-          "decimals": 1,
+          "unit": "percent",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 14 },
-              { "color": "green", "value": 30 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 99
+              },
+              {
+                "color": "green",
+                "value": 99.9
+              }
             ]
           }
         },
@@ -45,31 +122,90 @@
     },
     {
       "id": 2,
-      "type": "stat",
-      "title": "HTTP 探测 (0 = 正常)",
-      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+      "type": "state-timeline",
+      "title": "请求状态：$site",
+      "description": "绿 = 请求成功（result_code = 0），红 = 请求失败（超时 / DNS / 连接失败 / 状态码不符）。每个格子是 telegraf 的一次探测（面板最小步长 1m）。注意：Grafana 会把没有采样的空档用前一个状态延展过去，所以 telegraf 自己挂掉时这里不会变红，请看下面的「抓取目标 up」和 HttpProbeMissing 告警。悬停可看具体时间。",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "repeat": "site",
+      "repeatDirection": "h",
+      "maxPerRow": 1,
+      "interval": "1m",
       "targets": [
         {
           "refId": "A",
-          "expr": "max by (host) (http_response_result_code)",
-          "legendFormat": "{{host}}"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "expr": "max by (site) (http_response_result_code{site=~\"$site\"})",
+          "legendFormat": "{{site}}",
+          "instant": false,
+          "range": true
         }
       ],
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
+        "showValue": "never",
+        "mergeValues": true,
+        "alignValue": "left",
+        "rowHeight": 0.85,
+        "fillOpacity": 80,
+        "lineWidth": 0,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "timezone": []
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "noValue": "无数据",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "UP",
+                  "color": "green",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0.5,
+                "to": 1e+300,
+                "result": {
+                  "text": "DOWN",
+                  "color": "red"
+                }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 1 }
+              {
+                "color": "#404040",
+                "value": null
+              }
             ]
           }
         },
@@ -79,18 +215,145 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "抓取目标 up",
-      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
+      "title": "证书剩余天数（天）",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 10,
+        "x": 0,
+        "y": 12
+      },
       "targets": [
         {
           "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "expr": "min by (site, common_name) (x509_cert_expiry{type=\"leaf\"}) / 86400",
+          "legendFormat": "{{site}} · {{common_name}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name",
+        "orientation": "horizontal",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 14
+              },
+              {
+                "color": "green",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "每个站点自己探到的 leaf 证书还剩多少天，按 site + 证书 CN 分行显示。注意 home.lubui.com 和 lubui.com 目前用的是同一张 *.lubui.com 通配证书，所以两边天数一样是正常的，不是没区分。"
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "HTTP 响应时间",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 10,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "expr": "max by (site) (http_response_response_time{site=~\"$site\"})",
+          "legendFormat": "{{site}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "抓取目标 up",
+      "description": "探针本身活着吗。telegraf 挂了这里先红，上面的时间线会变成「无数据」。",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
           "expr": "up",
           "legendFormat": "{{job}} {{instance}}"
         }
       ],
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "colorMode": "background",
         "graphMode": "none",
         "textMode": "auto"
@@ -101,55 +364,17 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 1 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
             ]
           }
         },
-        "overrides": []
-      }
-    },
-    {
-      "id": 4,
-      "type": "timeseries",
-      "title": "证书剩余天数趋势",
-      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "x509_cert_expiry{type=\"leaf\"} / 86400",
-          "legendFormat": "{{host}}"
-        }
-      ],
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "fieldConfig": {
-        "defaults": { "unit": "d", "decimals": 1 },
-        "overrides": []
-      }
-    },
-    {
-      "id": 5,
-      "type": "timeseries",
-      "title": "HTTP 响应时间",
-      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "http_response_response_time",
-          "legendFormat": "{{host}}"
-        }
-      ],
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "fieldConfig": {
-        "defaults": { "unit": "s", "decimals": 3 },
         "overrides": []
       }
     }
