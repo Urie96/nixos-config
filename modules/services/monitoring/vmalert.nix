@@ -71,6 +71,37 @@
                 annotations.summary = "systemd 单元指标没有数据";
                 annotations.description = "telegraf 的 systemd_units 输入超过 15 分钟没有上报，检查 telegraf 服务是否正常（systemctl status telegraf）以及它能不能读 system bus。";
               }
+              {
+                # failed 的挂载单元已经被上面的 SystemdServiceFailed 覆盖，
+                # 这里补“没失败但根本不在挂载状态”的情况：/mnt/* 都是 nofail 挂的，
+                # 盘不在线时 unit 可能直接 inactive，备份会静默跳过（见 btrbk.nix 的注释）。
+                alert = "MountUnitInactive";
+                expr = ''systemd_units_active_code{name=~"mnt-.*\\.mount"} == 2'';
+                for = "10m";
+                labels.severity = "warning";
+                annotations.summary = "外挂盘没有挂载";
+                annotations.description = "{{$labels.host}} 上的 {{$labels.name}} 处于 inactive，对应的盘可能不在线（nofail 挂载不会阻塞启动），依赖它的备份/数据服务会静默跳过。";
+              }
+            ];
+          }
+
+          # 硬件层。srvos 的 SmartErrors 只看 SMART 的 overall-health 位
+          # （很多盘坏到一半它还是 PASSED），这里补真正在恶化的属性：
+          #   5   = Reallocated_Sector_Ct（已重映射扇区）
+          #   197 = Current_Pending_Sector（待定扇区，任何非 0 就该查盘）
+          #   198 = Offline_Uncorrectable（不可纠正扇区）
+          # 需要 telegraf.nix 里 inputs.smart.attributes = true。
+          {
+            name = "hardware";
+            rules = [
+              {
+                alert = "SmartAttributeDegrading";
+                expr = ''smart_attribute_raw_value{id=~"5|197|198"} > 0'';
+                for = "10m";
+                labels.severity = "critical";
+                annotations.summary = "磁盘 SMART 属性异常";
+                annotations.description = "{{$labels.device}} 的 {{$labels.name}}（id={{$labels.id}}）raw_value={{$value}}，说明已出现重映射/待定/不可纠正扇区，尽快备份并考虑换盘。";
+              }
             ];
           }
         ];
