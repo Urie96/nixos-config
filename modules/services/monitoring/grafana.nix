@@ -1,9 +1,6 @@
 {
   flake.nixosModules.grafana =
     { config, pkgs, ... }:
-    let
-      inherit (config.services) prometheus;
-    in
     {
       clan.core.vars.generators.grafana = {
         files.security_key.owner = "grafana";
@@ -40,14 +37,25 @@
           enable = true;
           datasources.settings.datasources = [
             {
-              name = "Prometheus";
+              # 数据源是 VictoriaMetrics 的 Prometheus 兼容 API，
+              # 不是 Prometheus server（services.prometheus.enable = false）
+              name = "VictoriaMetrics";
+              uid = "victoriametrics";
               type = "prometheus";
-              url = "http://${prometheus.listenAddress}:${toString prometheus.port}";
+              access = "proxy";
+              url = "http://127.0.0.1:8428";
+              isDefault = true;
             }
           ];
-          # dashboards.settings.providers = [
-          #
-          # ];
+          dashboards.settings.providers = [
+            {
+              name = "monitoring";
+              type = "file";
+              disableDeletion = false;
+              updateIntervalSeconds = 60;
+              options.path = "${./monitoring/grafana-dashboards}";
+            }
+          ];
         };
       };
 

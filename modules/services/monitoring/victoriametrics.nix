@@ -13,7 +13,7 @@
 
         prometheusConfig.scrape_configs = [
           {
-            # modules/services/telegraf.nix 在这里暴露 lubui.com 的
+            # ./telegraf.nix 在这里暴露 lubui.com 的
             # http_response / x509_cert 指标
             job_name = "telegraf";
             scrape_interval = "60s";

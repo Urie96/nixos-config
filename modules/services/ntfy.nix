@@ -6,7 +6,9 @@
         enable = true;
         settings = {
           base-url = "https://ntfy.lubui.com:8443";
-          listen-http = ":3112";
+          # 只监听回环：外部访问统一走下面的 nginx vhost，
+          # 避免 3112 直接暴露到局域网/公网
+          listen-http = "127.0.0.1:3112";
           # 反代后面必须开 behind-proxy，否则所有访客共享 nginx 一个 IP 的限流配额
           # （实测 visitors=1，手机订阅被 429 打死；开后可区分真实访客 IP）
           behind-proxy = true;
