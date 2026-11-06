@@ -103,8 +103,13 @@
             # 手机 App 用 https 中转，避免依赖 app.immich:// 这种自定义 scheme
             mobileOverrideEnabled = true;
             mobileRedirectUri = "https://immich.lubui.com:8443/api/oauth/mobile-redirect";
-            # lldap 里没有 preferred_username 这个 claim，用 uid
-            storageLabelClaim = "uid";
+            # storageLabelClaim 不用写：immich 的默认值就是 preferred_username，
+            # 而 authelia 会用 LDAP 的 attributes.username（本仓库配的是 uid）合成
+            # 这个 claim，所以 lldap 里没有原生 preferred_username 也能取到。
+            #
+            # 之前这里写的是 "uid"（理由写的是「lldap 没有 preferred_username」），
+            # 但 authelia 的 claims_supported 里没有 uid，这个 claim 永远拿不到值，
+            # OAuth 新用户的 storageLabel 会一直是 null。
           };
         };
       };

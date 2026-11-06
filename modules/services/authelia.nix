@@ -306,6 +306,28 @@
           locations."/" = {
             proxyPass = "http://127.0.0.1:9091";
             proxyWebsockets = true;
+
+            # authelia >= 4.38 用请求的 Host / X-Forwarded-Host 推导 OIDC
+            # issuer，再要求它精确匹配某个 session cookie 的 authelia_url。
+            # nixpkgs 推荐的 proxy_set_header 用的是 `$host`（不带端口），
+            # 于是 issuer 被推导成 `https://auth.lubui.com`，跟这里的
+            # `https://auth.lubui.com:8443` 对不上，
+            # /.well-known/openid-configuration 直接 400，下游（immich）的
+            # OIDC discovery 因此失败。用 `$host:$server_port` 带上实际端口
+            # （不用 $http_host：gixy 会把它判成 host_spoofing 并让
+            # writeNginxConfig 构建失败）。
+            #
+            # 必须关掉 recommendedProxySettings 自己写全套：nixpkgs 把那个
+            # include 放在 extraConfig 之后，同名 proxy_set_header 会被它盖回去。
+            recommendedProxySettings = false;
+            extraConfig = ''
+              proxy_set_header Host $host:$server_port;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-Host $host:$server_port;
+              proxy_set_header X-Forwarded-Server $hostname;
+            '';
           };
         };
       };
