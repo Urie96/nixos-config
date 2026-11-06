@@ -31,7 +31,11 @@
               name = "ntfy";
               webhook_configs = [
                 {
-                  url = "http://127.0.0.1:9095";
+                  # 路径必须是 /hook：alertmanager-ntfy 只注册了这一个端点（
+                  # 上游 alexbakker/alertmanager-ntfy 的 server.go 里就 /hook），
+                  # 不写路径 POST 到 / 会被回 404，而 alertmanager 只会默默重试，
+                  # 表现就是“有告警但手机一条都收不到”。
+                  url = "http://127.0.0.1:9095/hook";
                   send_resolved = true;
                   max_alerts = 10;
                 }

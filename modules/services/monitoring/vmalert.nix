@@ -86,21 +86,34 @@
           }
 
           # 硬件层。srvos 的 SmartErrors 只看 SMART 的 overall-health 位
-          # （很多盘坏到一半它还是 PASSED），这里补真正在恶化的属性：
-          #   5   = Reallocated_Sector_Ct（已重映射扇区）
-          #   197 = Current_Pending_Sector（待定扇区，任何非 0 就该查盘）
-          #   198 = Offline_Uncorrectable（不可纠正扇区）
+          # （很多盘坏到一半它还是 PASSED），这里补真正在恶化的属性。
+          #
+          # 注意两个标定：
+          #   - 重映射扇区（id 5）**不能**用 > 0 当阈值：home-server 那块 4T 盘
+          #     已经跑了 2 万多小时，raw=1 是正常的磨损，不是故障。所以这条看
+          #     “24 小时内还在涨”，而不是绝对值。
+          #   - 待定/不可纠正扇区（197/198）任何非 0 都值得看，用窗口内最大值，
+          #     这样也顶得住机械盘休眠导致的序列中断（telegraf 默认
+          #     nocheck=standby，盘睡了就不出数据）。
           # 需要 telegraf.nix 里 inputs.smart.attributes = true。
           {
             name = "hardware";
             rules = [
               {
-                alert = "SmartAttributeDegrading";
-                expr = ''smart_attribute_raw_value{id=~"5|197|198"} > 0'';
-                for = "10m";
+                alert = "SmartPendingSectors";
+                expr = ''max_over_time(smart_attribute_raw_value{id=~"197|198"}[3h]) > 0'';
+                for = "1h";
                 labels.severity = "critical";
-                annotations.summary = "磁盘 SMART 属性异常";
-                annotations.description = "{{$labels.device}} 的 {{$labels.name}}（id={{$labels.id}}）raw_value={{$value}}，说明已出现重映射/待定/不可纠正扇区，尽快备份并考虑换盘。";
+                annotations.summary = "磁盘出现待定/不可纠正扇区";
+                annotations.description = "{{$labels.device}} 的 {{$labels.name}}（id={{$labels.id}}）= {{$value}}，3 小时内出现过非 0 值。数据可能已经读不出来了，先把 btrbk 备份跑一遍再去查盘。";
+              }
+              {
+                alert = "SmartReallocatedGrowing";
+                expr = ''delta(smart_attribute_raw_value{id="5"}[24h]) > 0'';
+                for = "1h";
+                labels.severity = "warning";
+                annotations.summary = "磁盘重映射扇区在增长";
+                annotations.description = "{{$labels.device}} 的 Reallocated_Sector_Ct 24 小时内增加了 {{$value}}（当前值见 smart_attribute_raw_value{id=\"5\"}）。绝对值不大时不用慌，但要开始关注并确保备份可恢复。";
               }
             ];
           }

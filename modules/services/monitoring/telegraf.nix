@@ -64,19 +64,22 @@
               }
             ];
 
-            # TLS 证书剩余有效期，单位秒
-            # 证书一天才变一次，1h 足够；同步周期越长，重启后的空窗越大。
+            # TLS 证书剩余有效期，单位秒。
+            # 证书一天才变一次，10 分钟足够；但不能写成小时级：
+            #   - telegraf 不在启动时先采一次，重启后要等满一个 interval 才有第一个点
+            #   - vmalert 的 CertProbeMissing 是 absent(...) 超过 15 分钟就报
+            # 之前在 1h 下，每次 telegraf 重启都必然误报一个 CertProbeMissing（实测）。
             x509_cert = [
               {
                 sources = [ "https://lubui.com:443" ];
                 timeout = "10s";
-                interval = "1h";
+                interval = "10m";
                 tags.site = "lubui.com";
               }
               {
                 sources = [ "https://home.lubui.com:8443" ];
                 timeout = "10s";
-                interval = "1h";
+                interval = "10m";
                 tags.site = "home.lubui.com";
               }
             ];
