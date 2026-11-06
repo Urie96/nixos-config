@@ -35,6 +35,23 @@
           '';
         };
 
+        # OIDC 客户端列表。留空 = 不启用 OIDC（authelia 不允许 clients 为空）。
+        #
+        # 每一项就是 identity_providers.oidc.clients 的一个条目，字段名照抄
+        # authelia 文档（client_id / client_secret / redirect_uris / scopes ...）。
+        # 各服务模块自己往这里追加（listOf 会合并），客户端配置就跟服务放一起。
+        #
+        # 注意 client_secret 必须是摘要（`authelia crypto hash generate pbkdf2`
+        # 的输出），authelia 不接受明文；想要摘要被求值进配置，对应的 clan var
+        # 文件得标 `secret = false`。
+        oidcClients = lib.mkOption {
+          type = lib.types.listOf lib.types.anything;
+          default = [ ];
+          description = ''
+            注册到 authelia 的 OIDC 客户端。非空时自动启用 identity_providers.oidc。
+          '';
+        };
+
         nginxForwardAuth = lib.mkOption {
           type = lib.types.str;
           readOnly = true;
@@ -123,6 +140,25 @@
       };
 
       config = {
+        # OIDC 的 hmac 和签名私钥单独一个 generator：塞进上面那个 `authelia`
+        # generator 会连带重跑脚本、轮换 jwt/storage/session 密钥（所有人掉线、
+        # 已加密的存储数据直接解不开）。
+        #
+        # hmac-secret 用来签名/校验授权码与 token；issuer-key 是 RS256 签名 JWKS
+        # 的私钥，authelia 会自己从中导出公钥 JWKS。
+        clan.core.vars.generators.authelia-oidc = lib.mkIf (cfg.oidcClients != [ ]) {
+          files.hmac-secret.owner = "authelia-main";
+          files.issuer-key.owner = "authelia-main";
+          runtimeInputs = with pkgs; [
+            coreutils
+            openssl
+          ];
+          script = ''
+            openssl rand 64 | openssl base64 -A | tr '+/' '-_' | tr -d '=' > "$out/hmac-secret"
+            openssl genrsa 4096 > "$out/issuer-key"
+          '';
+        };
+
         # Vars generator for authelia secrets
         clan.core.vars.generators.authelia = {
           files = {
@@ -176,6 +212,11 @@
             storageEncryptionKeyFile =
               config.clan.core.vars.generators.authelia.files.storage-encryption-key.path;
             sessionSecretFile = config.clan.core.vars.generators.authelia.files.session-secret.path;
+          }
+          // lib.optionalAttrs (cfg.oidcClients != [ ]) {
+            oidcHmacSecretFile = config.clan.core.vars.generators.authelia-oidc.files.hmac-secret.path;
+            oidcIssuerPrivateKeyFile =
+              config.clan.core.vars.generators.authelia-oidc.files.issuer-key.path;
           };
 
           # LDAP 的 bind 密码不能写进 settings（会进 nix store），走 _FILE。
@@ -239,6 +280,14 @@
 
             storage.local.path = "/var/lib/authelia-main/db.sqlite3";
             notifier.filesystem.filename = "/var/lib/authelia-main/notifications.txt";
+          }
+          # OIDC provider 的 issuer 在 authelia >= 4.38 里等于 session cookie
+          # 的 authelia_url（上面 session.cookies），所以这里只需要客户端。
+          #
+          # 用 optionalAttrs 而不是 mkIf：空列表时整个 identity_providers 键不
+          # 存在，不会给 authelia 留一个空的 oidc 段。
+          // lib.optionalAttrs (cfg.oidcClients != [ ]) {
+            identity_providers.oidc.clients = cfg.oidcClients;
           };
         };
 
