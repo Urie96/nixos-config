@@ -57,6 +57,13 @@
 
       services.openssh.enable = true;
 
+      # journald 默认不设上限，SystemMaxUse 会取文件系统的 10%（这台机器就是 ~90G）。
+      # 实际约 50MB/天，这里给个兜底：总占用封顶 2G、单文件 200M，避免日志无限涨。
+      services.journald.settings.Journal = {
+        SystemMaxUse = "2G";
+        SystemMaxFileSize = "200M";
+      };
+
       programs = {
         nano.enable = false;
         nix-ld.enable = true;
