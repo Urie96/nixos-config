@@ -1,0 +1,276 @@
+{
+  "uid": "alerts-overview",
+  "title": "告警总览",
+  "tags": ["alerts", "monitoring"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "正在告警 (firing)",
+      "description": "vmalert 里 for 已经满足、正在 firing 的告警条数。这些都会推 ntfy。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(ALERTS{alertstate=\"firing\"}) or vector(0)",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "等待中 (pending)",
+      "description": "表达式已经命中、但还没满足 for 的告警。还没推给你，可以提前看趋势。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(ALERTS{alertstate=\"pending\"}) or vector(0)",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "24h 内触发过的告警种类",
+      "description": "过去 24 小时里至少 firing 过一次的 alertname 数量（含已恢复的），来自 VictoriaMetrics 的 ALERTS 历史。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(count by (alertname) (max_over_time(ALERTS{alertstate=\"firing\"}[24h]))) or vector(0)",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "24h 内已恢复的告警",
+      "description": "过去 24 小时 firing 过、但现在不在 firing 的 alertname 个数。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(count by (alertname) (max_over_time((ALERTS{alertstate=\"firing\"})[24h:1m])) unless count by (alertname) (ALERTS{alertstate=\"firing\"})) or vector(0)",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "正在告警 (firing)",
+      "description": "点标题进不去 vmalert UI，但可以按 alertname 在 http://127.0.0.1:8428/vmalert/ 里搜规则。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ALERTS{alertstate=\"firing\"}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "alertstate": true,
+              "alertgroup": true,
+              "instance": true,
+              "job": true,
+              "Value": true
+            },
+            "renameByName": {
+              "alertname": "告警",
+              "severity": "级别",
+              "name": "单元",
+              "site": "站点",
+              "device": "设备",
+              "host": "主机"
+            }
+          }
+        }
+      ],
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "告警", "desc": false }] },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "等待中 (pending)",
+      "description": "表达式命中但 for 还没走完，暂时不会推送。如果这里长期挂着一堆，说明阈值偏敏感。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ALERTS{alertstate=\"pending\"}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "alertstate": true,
+              "alertgroup": true,
+              "instance": true,
+              "job": true,
+              "Value": true
+            },
+            "renameByName": {
+              "alertname": "告警",
+              "severity": "级别",
+              "name": "单元",
+              "site": "站点",
+              "device": "设备",
+              "host": "主机"
+            }
+          }
+        }
+      ],
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "告警", "desc": false }] },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "各告警的状态变化",
+      "description": "ALERTS 序列消失 = 已恢复。一条线在某一刻开始出现，就是那条告警开始 firing。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count by (alertname, alertstate) (ALERTS)",
+          "legendFormat": "{{alertname}} ({{alertstate}})"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["max", "lastNotNull"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "24h 内已恢复的告警",
+      "description": "过去 24 小时 firing 过、现在不在 firing 的告警（值 = 该告警在 24h 内出现过的序列数）。",
+      "datasource": { "type": "prometheus", "uid": "victoriametrics" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 22 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count by (alertname) (max_over_time((ALERTS{alertstate=\"firing\"})[24h:1m])) unless count by (alertname) (ALERTS{alertstate=\"firing\"})",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "alertname": "告警", "Value": "24h 内触发次数(序列数)" }
+          }
+        }
+      ],
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "告警", "desc": false }] },
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [] }
+    }
+  ]
+}
