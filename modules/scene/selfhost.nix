@@ -30,9 +30,7 @@
       memos
       ntfy
       pairdrop
-      uptime-kuma
-      telegraf
-      victoriametrics
+      monitoring
       immich
       jellyfin-server
       love-yue

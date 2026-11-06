@@ -17,7 +17,6 @@
         full
         server
         special-day-notify
-        systemd-monitor
         router
         singbox-home
         # 这台机器也是构建机（x86 leg 的 runner），构建的包也在构建时签名
@@ -73,5 +72,12 @@
       system.stateVersion = "24.11";
 
       srvos.detect-hostname-change.enable = false;
+
+      # srvos 默认给所有机器加 console=ttyS0,115200（serial.nix），于是 systemd-getty-generator
+      # 为 ttyS0 生成 serial-getty 实例；但这台机器没有真实串口，8250 驱动注册的
+      # ttyS0~ttyS3 全是 type=0（PORT_UNKNOWN），agetty 一启动就报「不是终端」并以 1 退出，
+      # 被 Restart=always 拉起重启，约每 10s 一次、每天 8000+ 次、日志 4MB/天。
+      # 只留 tty0，去掉 cmdline 里的 console=ttyS0（需要重新部署 + 重启才生效）。
+      srvos.boot.consoles = [ "tty0" ];
     };
 }

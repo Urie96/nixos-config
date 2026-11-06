@@ -35,6 +35,37 @@
           '';
         };
 
+        # OIDC 客户端列表。留空 = 不启用 OIDC（authelia 不允许 clients 为空）。
+        #
+        # 每一项就是 identity_providers.oidc.clients 的一个条目，字段名照抄
+        # authelia 文档（client_id / client_secret / redirect_uris / scopes ...）。
+        # 各服务模块自己往这里追加（listOf 会合并），客户端配置就跟服务放一起。
+        #
+        # 注意 client_secret 必须是摘要（`authelia crypto hash generate pbkdf2`
+        # 的输出），authelia 不接受明文；想要摘要被求值进配置，对应的 clan var
+        # 文件得标 `secret = false`。
+        oidcClients = lib.mkOption {
+          type = lib.types.listOf lib.types.anything;
+          default = [ ];
+          description = ''
+            注册到 authelia 的 OIDC 客户端。非空时自动启用 identity_providers.oidc。
+          '';
+        };
+
+        # OIDC claims 策略。key 是策略名，客户端用 `claims_policy = "<name>"` 引用。
+        #
+        # 默认策略（不写这个）只把 scope 对应的 claims 放进 userinfo，id_token
+        # 里只有 sub / iss / aud 等标准 claim。只读 id_token 的客户端（OpenList）
+        # 因此拿不到 preferred_username，要在对应的 `id_token` 列表里显式列出。
+        # 各服务模块自己往这里追加（attrsOf 会合并）。
+        oidcClaimsPolicies = lib.mkOption {
+          type = lib.types.attrsOf lib.types.anything;
+          default = { };
+          description = ''
+            注册到 authelia 的 OIDC claims 策略（identity_providers.oidc.claims_policies）。
+          '';
+        };
+
         nginxForwardAuth = lib.mkOption {
           type = lib.types.str;
           readOnly = true;
@@ -45,6 +76,49 @@
           default = ''
             auth_request /authelia;
             error_page 401 =302 ${cfg.url}/?rd=$scheme://$http_host$request_uri;
+          '';
+        };
+
+        # 带身份的 forward-auth：跟 nginxForwardAuth 一样挂在 vhost 的 server 级
+        # extraConfig，但把 authelia /api/verify 响应里的 Remote-User /
+        # Remote-Groups 取出来存成 nginx 变量，供 nginxSsoUserHeaders 透传给后端。
+        #
+        # 单挂这个只解决「挡住没登录的人」；要让下游真的免登录，后端得自己信任
+        # 这些头（例如 grafana 的 auth.proxy），否则用户还是会被问第二遍密码。
+        nginxSsoConfig = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          description = ''
+            带身份的 forward-auth 片段，放在 vhost 的 server 级 `extraConfig` 里。
+            配合 `/authelia` location + `nginxSsoUserHeaders` 使用。
+          '';
+          default = ''
+            auth_request /authelia;
+            auth_request_set $authelia_user $upstream_http_remote_user;
+            auth_request_set $authelia_groups $upstream_http_remote_groups;
+            auth_request_set $authelia_email $upstream_http_remote_email;
+            auth_request_set $authelia_name $upstream_http_remote_name;
+            error_page 401 =302 ${cfg.url}/?rd=$scheme://$http_host$request_uri;
+          '';
+        };
+
+        # 必须放在 location 里而不是 server 级：location 自己写了 proxy_set_header
+        # （recommendedProxySettings 就会写）之后，server 级的 proxy_set_header
+        # 会被整体覆盖，头就丢了。
+        #
+        # 没跑 auth_request 的 location 里这两个变量是空字符串，等于传给下游一个
+        # 空头 —— 这是防伪造的关键，不要图省事直接手写成用户名。
+        nginxSsoUserHeaders = lib.mkOption {
+          type = lib.types.str;
+          readOnly = true;
+          description = ''
+            需要身份的 location 里的 `proxy_set_header` 片段，配合 `nginxSsoConfig`。
+          '';
+          default = ''
+            proxy_set_header Remote-User $authelia_user;
+            proxy_set_header Remote-Groups $authelia_groups;
+            proxy_set_header Remote-Email $authelia_email;
+            proxy_set_header Remote-Name $authelia_name;
           '';
         };
 
@@ -80,6 +154,25 @@
       };
 
       config = {
+        # OIDC 的 hmac 和签名私钥单独一个 generator：塞进上面那个 `authelia`
+        # generator 会连带重跑脚本、轮换 jwt/storage/session 密钥（所有人掉线、
+        # 已加密的存储数据直接解不开）。
+        #
+        # hmac-secret 用来签名/校验授权码与 token；issuer-key 是 RS256 签名 JWKS
+        # 的私钥，authelia 会自己从中导出公钥 JWKS。
+        clan.core.vars.generators.authelia-oidc = lib.mkIf (cfg.oidcClients != [ ]) {
+          files.hmac-secret.owner = "authelia-main";
+          files.issuer-key.owner = "authelia-main";
+          runtimeInputs = with pkgs; [
+            coreutils
+            openssl
+          ];
+          script = ''
+            openssl rand 64 | openssl base64 -A | tr '+/' '-_' | tr -d '=' > "$out/hmac-secret"
+            openssl genrsa 4096 > "$out/issuer-key"
+          '';
+        };
+
         # Vars generator for authelia secrets
         clan.core.vars.generators.authelia = {
           files = {
@@ -133,6 +226,10 @@
             storageEncryptionKeyFile =
               config.clan.core.vars.generators.authelia.files.storage-encryption-key.path;
             sessionSecretFile = config.clan.core.vars.generators.authelia.files.session-secret.path;
+          }
+          // lib.optionalAttrs (cfg.oidcClients != [ ]) {
+            oidcHmacSecretFile = config.clan.core.vars.generators.authelia-oidc.files.hmac-secret.path;
+            oidcIssuerPrivateKeyFile = config.clan.core.vars.generators.authelia-oidc.files.issuer-key.path;
           };
 
           # LDAP 的 bind 密码不能写进 settings（会进 nix store），走 _FILE。
@@ -182,7 +279,7 @@
             access_control.default_policy = "one_factor";
 
             session = {
-              expiration = "1h"; # 不勾「记住我」时 cookie 的有效期。会被活动滚动续期，不是"登录后总共只能活 1h"
+              expiration = "1M"; # 不勾「记住我」时 cookie 的有效期。会被活动滚动续期，不是"登录后总共只能活 1h"
               inactivity = "12h"; # 空闲超时：两次「有活动」之间的最大间隔。超了就销毁 session，要重新登录。每次授权的请求都会刷新它
               remember_me = "1M"; # 勾了「记住我」时用的有效期，直接替代 expiration。设成 -1 可以整个禁用「记住我」
               cookies = [
@@ -196,6 +293,19 @@
 
             storage.local.path = "/var/lib/authelia-main/db.sqlite3";
             notifier.filesystem.filename = "/var/lib/authelia-main/notifications.txt";
+          }
+          # OIDC provider 的 issuer 在 authelia >= 4.38 里等于 session cookie
+          # 的 authelia_url（上面 session.cookies），所以这里只需要客户端。
+          #
+          # 用 optionalAttrs 而不是 mkIf：空列表时整个 identity_providers 键不
+          # 存在，不会给 authelia 留一个空的 oidc 段。
+          // lib.optionalAttrs (cfg.oidcClients != [ ]) {
+            identity_providers.oidc = {
+              clients = cfg.oidcClients;
+            }
+            // lib.optionalAttrs (cfg.oidcClaimsPolicies != { }) {
+              claims_policies = cfg.oidcClaimsPolicies;
+            };
           };
         };
 
@@ -214,6 +324,28 @@
           locations."/" = {
             proxyPass = "http://127.0.0.1:9091";
             proxyWebsockets = true;
+
+            # authelia >= 4.38 用请求的 Host / X-Forwarded-Host 推导 OIDC
+            # issuer，再要求它精确匹配某个 session cookie 的 authelia_url。
+            # nixpkgs 推荐的 proxy_set_header 用的是 `$host`（不带端口），
+            # 于是 issuer 被推导成 `https://auth.lubui.com`，跟这里的
+            # `https://auth.lubui.com:8443` 对不上，
+            # /.well-known/openid-configuration 直接 400，下游（immich）的
+            # OIDC discovery 因此失败。用 `$host:$server_port` 带上实际端口
+            # （不用 $http_host：gixy 会把它判成 host_spoofing 并让
+            # writeNginxConfig 构建失败）。
+            #
+            # 必须关掉 recommendedProxySettings 自己写全套：nixpkgs 把那个
+            # include 放在 extraConfig 之后，同名 proxy_set_header 会被它盖回去。
+            recommendedProxySettings = false;
+            extraConfig = ''
+              proxy_set_header Host $host:$server_port;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-Host $host:$server_port;
+              proxy_set_header X-Forwarded-Server $hostname;
+            '';
           };
         };
       };

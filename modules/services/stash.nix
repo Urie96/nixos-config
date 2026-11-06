@@ -27,7 +27,8 @@
         mutablePlugins = true;
         mutableScrapers = true;
         settings = {
-          host = "0.0.0.0";
+          # 只给本机 nginx 反代用；0.0.0.0 会让局域网直连 9999 绕开 authelia。
+          host = "127.0.0.1";
           sound_on_preview = true;
           language = "zh-CN";
           stash = [
@@ -46,18 +47,28 @@
         addSSL = true;
         useACMEHost = "lubui.com";
 
-        locations."/" = {
-          proxyPass = "http://127.0.0.1:${toString config.services.stash.settings.port}";
-          proxyWebsockets = true;
-          recommendedProxySettings = false; # host需要传端口
-          extraConfig = ''
-            proxy_set_header        Host $host:$server_port;
-            proxy_set_header        X-Real-IP $remote_addr;
-            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto $scheme;
-            proxy_set_header        X-Forwarded-Host $host;
-            proxy_set_header        X-Forwarded-Server $host;
-          '';
+        # 公网可达（WAN 开了 8443），入口先过 authelia。
+        # stash 没有 auth.proxy 这种信任反代头的机制，所以这里只挡门不传身份；
+        # 配合下面“允许无认证访问”就是单点登录效果（进门的人不再输 stash 密码）。
+        extraConfig = config.my.authelia.nginxSsoConfig;
+
+        locations = {
+          "/authelia" = {
+            extraConfig = config.my.authelia.nginxVerifyLocation;
+          };
+          "/" = {
+            proxyPass = "http://127.0.0.1:${toString config.services.stash.settings.port}";
+            proxyWebsockets = true;
+            recommendedProxySettings = false; # host需要传端口
+            extraConfig = ''
+              proxy_set_header        Host $host:$server_port;
+              proxy_set_header        X-Real-IP $remote_addr;
+              proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header        X-Forwarded-Proto $scheme;
+              proxy_set_header        X-Forwarded-Host $host;
+              proxy_set_header        X-Forwarded-Server $host;
+            '';
+          };
         };
       };
     };
