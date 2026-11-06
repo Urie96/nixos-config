@@ -51,8 +51,9 @@
             header_name = "Remote-User";
             header_property = "username";
             auto_sign_up = true;
-            # authelia 那边的 session 失效后 nginx 会直接 302，这里只是
-            # 兜底让 grafana 定期重读头（秒）。
+            headers = "Email:Remote-Email Name:Remote-Name";
+            # 单位是分钟（不是秒）：本地缓存多久重新从 header 同步一次。
+            # 改 lldap 里的邮箱/昵称后最多等这么久才生效，0 = 每次请求都同步。
             sync_ttl = 15;
           };
           # 在 grafana 里点退出 -> 顺手把 authelia 的 session 也退掉，
