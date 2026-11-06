@@ -109,11 +109,14 @@
               }
               {
                 alert = "SmartReallocatedGrowing";
-                expr = ''delta(smart_attribute_raw_value{id="5"}[24h]) > 0'';
+                # 不要用 delta()/increase()：机械盘休眠 + series 消失会让 VictoriaMetrics
+                # 的增量函数算出幻觉值（实测一块恒为 1 的 series，delta(...[24h]) 返回 1）。
+                # max_over_time 和 min_over_time 各自取窗口内真实样本的最值，不受中断影响。
+                expr = ''max_over_time(smart_attribute_raw_value{id="5"}[24h]) > min_over_time(smart_attribute_raw_value{id="5"}[24h])'';
                 for = "1h";
                 labels.severity = "warning";
                 annotations.summary = "磁盘重映射扇区在增长";
-                annotations.description = "{{$labels.device}} 的 Reallocated_Sector_Ct 24 小时内增加了 {{$value}}（当前值见 smart_attribute_raw_value{id=\"5\"}）。绝对值不大时不用慌，但要开始关注并确保备份可恢复。";
+                annotations.description = "{{$labels.device}} 的 Reallocated_Sector_Ct 24 小时内不再是恒定值（当前值看 smart_attribute_raw_value{id=\"5\"}）。绝对值不大时不用慌，但要开始关注并确保 btrbk 备份可恢复。";
               }
             ];
           }
