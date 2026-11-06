@@ -52,6 +52,20 @@
           '';
         };
 
+        # OIDC claims 策略。key 是策略名，客户端用 `claims_policy = "<name>"` 引用。
+        #
+        # 默认策略（不写这个）只把 scope 对应的 claims 放进 userinfo，id_token
+        # 里只有 sub / iss / aud 等标准 claim。只读 id_token 的客户端（OpenList）
+        # 因此拿不到 preferred_username，要在对应的 `id_token` 列表里显式列出。
+        # 各服务模块自己往这里追加（attrsOf 会合并）。
+        oidcClaimsPolicies = lib.mkOption {
+          type = lib.types.attrsOf lib.types.anything;
+          default = { };
+          description = ''
+            注册到 authelia 的 OIDC claims 策略（identity_providers.oidc.claims_policies）。
+          '';
+        };
+
         nginxForwardAuth = lib.mkOption {
           type = lib.types.str;
           readOnly = true;
@@ -215,8 +229,7 @@
           }
           // lib.optionalAttrs (cfg.oidcClients != [ ]) {
             oidcHmacSecretFile = config.clan.core.vars.generators.authelia-oidc.files.hmac-secret.path;
-            oidcIssuerPrivateKeyFile =
-              config.clan.core.vars.generators.authelia-oidc.files.issuer-key.path;
+            oidcIssuerPrivateKeyFile = config.clan.core.vars.generators.authelia-oidc.files.issuer-key.path;
           };
 
           # LDAP 的 bind 密码不能写进 settings（会进 nix store），走 _FILE。
@@ -266,7 +279,7 @@
             access_control.default_policy = "one_factor";
 
             session = {
-              expiration = "1h"; # 不勾「记住我」时 cookie 的有效期。会被活动滚动续期，不是"登录后总共只能活 1h"
+              expiration = "1M"; # 不勾「记住我」时 cookie 的有效期。会被活动滚动续期，不是"登录后总共只能活 1h"
               inactivity = "12h"; # 空闲超时：两次「有活动」之间的最大间隔。超了就销毁 session，要重新登录。每次授权的请求都会刷新它
               remember_me = "1M"; # 勾了「记住我」时用的有效期，直接替代 expiration。设成 -1 可以整个禁用「记住我」
               cookies = [
@@ -287,7 +300,12 @@
           # 用 optionalAttrs 而不是 mkIf：空列表时整个 identity_providers 键不
           # 存在，不会给 authelia 留一个空的 oidc 段。
           // lib.optionalAttrs (cfg.oidcClients != [ ]) {
-            identity_providers.oidc.clients = cfg.oidcClients;
+            identity_providers.oidc = {
+              clients = cfg.oidcClients;
+            }
+            // lib.optionalAttrs (cfg.oidcClaimsPolicies != { }) {
+              claims_policies = cfg.oidcClaimsPolicies;
+            };
           };
         };
 

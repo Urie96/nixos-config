@@ -67,6 +67,7 @@
         {
           client_id = "openlist";
           client_name = "OpenList";
+          claims_policy = "openlist";
           client_secret = config.clan.core.vars.generators.openlist-oidc.files.client-secret-hash.value;
           public = false;
           # OpenList 的 oauth2 库是 AuthStyleAutoDetect，先试 basic
@@ -85,6 +86,20 @@
           id_token_signed_response_alg = "RS256";
           userinfo_signed_response_alg = "none";
         }
+      ];
+
+      # id_token 里必须有 username key：OpenList 只 parse id_token 的 payload
+      # （server/handles/ssologin.go 里 `parseJWT(rawIDToken)` 后直接取
+      # SSOOIDCUsernameKey，不查 userinfo），缺了就是
+      # `cannot get username from OIDC provider`。authelia 默认只把 scope 的
+      # claims 放进 userinfo（NewDefaultCustomClaimsStrategy 里 claimsIDToken
+      # 是空列表），所以这里给这个客户端挂一个把 preferred_username 也写进
+      # id_token 的策略，并在客户端上用 claims_policy 引用。
+      my.authelia.oidcClaimsPolicies.openlist.id_token = [
+        "preferred_username"
+        # 兜底：OpenList 的 username key 默认值是 name，万一网页里没改成
+        # preferred_username，就取 lldap 的 cn。
+        "name"
       ];
 
       users.users.openlist = {
