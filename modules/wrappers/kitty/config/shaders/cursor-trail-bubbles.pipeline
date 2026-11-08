@@ -1,0 +1,31 @@
+# 只保留「冒泡泡」（torpedo 粒子），去掉光标被放大的效果。
+#
+# kitty 内置的 cursor-trail-torpedo.pipeline 内容是：
+#     shaders cursor-trail-default cursor-trail-particles
+# 其中 cursor-trail-default 会把「上一次光标位置 → 当前位置」连成一个四边形
+# 整体涂色。光标大跳时（gg、搜索、全屏刷新）这个四边形就是一整块巨大的光标
+# 形状的色块，看起来像光标突然变大；而且它每帧都要多跑一遍全屏 shader。
+# 这里直接不引用它，只留 cursor-trail-particles。
+#
+# var 会替换 cursor-trail-particles.slang 里的 static const：
+#   MODE 1              torpedo 风格（向后喷出的尾迹泡泡）
+#   PARTICLE_COLOR      泡泡颜色，这里取 blaze 的 TRAIL_COLOR 琥珀色。
+#                       默认 float4(0) = 跟随 cursor_trail_color（通常是光标背景色，
+#                       往往太暗看不出来），alpha 必须 > 0 才会用这个颜色。
+#   PARTICLE_SIZE 0.16  泡泡半径，相对光标大小的比例（默认 0.12，调大更明显）
+#   MAX_PARTICLES 24    单次移动最多 24 个粒子（默认 48）
+#   PARTICLE_DENSITY 2.5  每行高距离发射的粒子数（默认 3）
+#   LIFETIME 0.6        粒子寿命（默认 0.8）
+# animation_stop 必须大于 LIFETIME + EMIT_DURATION（0.6 + 0.08），否则粒子会提前消失。
+startgroup
+    animation_start cursor-trail-move
+    animation_stop 700
+    animation_step 16
+    var int MODE 1
+    var float4 PARTICLE_COLOR float4(1.0, 0.725, 0.161, 1.0)
+    var float PARTICLE_SIZE 0.16
+    var int MAX_PARTICLES 24
+    var float PARTICLE_DENSITY 2.5
+    var float LIFETIME 0.6
+    shaders cursor-trail-particles
+endgroup
