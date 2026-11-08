@@ -47,6 +47,7 @@
       searx
       calibre
       kosync
+      ownfoil
       xiaozhi-server-rs
       # pi-server
     ];

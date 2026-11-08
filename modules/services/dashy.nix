@@ -125,6 +125,12 @@
                   icon = "https://calibre.lubui.com:8443/static/favicon.ico";
                   url = "https://calibre.lubui.com:8443";
                 })
+                (ifEnabled (config.systemd.services ? ownfoil) {
+                  title = "Ownfoil";
+                  description = "Switch 游戏库与商店";
+                  icon = "https://ownfoil.lubui.com:8443/static/logo/logo-256.png";
+                  url = "https://ownfoil.lubui.com:8443";
+                })
                 (ifEnabled (config.systemd.services ? openlist) {
                   description = "多网盘挂载文件列表";
                   icon = "https://doc.oplist.org/favicon.svg";
