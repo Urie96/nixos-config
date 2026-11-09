@@ -125,7 +125,7 @@
           # 本地兜底管理员。别用 urie：SSO 首次登录会按 preferred_username 建一个
           # 同名用户，撞名之后 allauth 会给它加随机后缀，两个号很难分辨。
           PAPERLESS_ADMIN_USER = "admin";
-          PAPERLESS_ADMIN_MAIL = "lubui.com@gmail.com";
+          PAPERLESS_ADMIN_MAIL = "admin@localhost";
 
           # —— SSO（authelia OIDC）——
           # PAPERLESS_APPS 是 Django INSTALLED_APPS 的追加列表，逗号分隔。
