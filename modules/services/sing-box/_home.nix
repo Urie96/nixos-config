@@ -12,6 +12,8 @@
 
       sing-box-hk = config.clan.core.vars.generators.sing-box-hk.files;
       sing-box-kr = config.clan.core.vars.generators.sing-box-kr.files;
+      sing-box-kr-reality = config.clan.core.vars.generators.sing-box-kr-reality.files;
+      sing-box-kr-hysteria2 = config.clan.core.vars.generators.sing-box-kr-hysteria2.files;
     in
     {
       enable = true;
@@ -58,57 +60,12 @@
           enabled = true;
           server = "time.apple.com";
         };
-        outbounds =
-          let
-            mkVMessOutput = name: vars: {
-              tag = name;
-              alter_id = 0;
-              authenticated_length = true;
-              global_padding = false;
-              multiplex = {
-                enabled = true;
-                max_connections = 4;
-              };
-              security = "auto";
-              server = vars.remote_ip.value;
-              server_port = 8443;
-              tls = {
-                certificate = [ vars.crt.value ];
-                disable_sni = false;
-                enabled = true;
-                insecure = false;
-                server_name = vars.remote_domain.value;
-              };
-              transport = {
-                headers = {
-                  Host = vars.remote_domain.value;
-                };
-                path = "/Dacexo5f/";
-                type = "ws";
-              };
-              type = "vmess";
-              uuid._secret = vars.uuid.path;
-            };
-          in
-          [
-            {
-              tag = "direct-out";
-              type = "direct";
-            }
-            {
-              tag = "proxy-out";
-              default = "vmess-hk";
-              outbounds = [
-                "vmess-hk"
-                "vmess-kr"
-                "direct-out"
-              ];
-              type = "selector";
-            }
-
-            (mkVMessOutput "vmess-hk" sing-box-hk)
-            (mkVMessOutput "vmess-kr" sing-box-kr)
-          ];
+        # 节点定义在 _client-outbounds.nix，Android 订阅复用同一份。
+        # 仓库里没有 vless-hk（HK 只有 vmess），唯一的 VLESS 节点是 KR 的 REALITY。
+        outbounds = import ./_client-outbounds.nix {
+          inherit sing-box-hk sing-box-kr sing-box-kr-reality sing-box-kr-hysteria2;
+          default = "vless-kr-reality";
+        };
         dns = {
           reverse_mapping = true; # 后续从ip反映射回域名从而实现域名路由规则
           strategy = "ipv4_only"; # 阿里云轻量服务器不支持ipv6
