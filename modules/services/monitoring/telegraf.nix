@@ -132,6 +132,20 @@
               }
             ];
 
+            # nginx 的 stub_status（status vhost 见 modules/services/nginx.nix，
+            # 只监听 127.0.0.1:9113）。stub_status 只有连接级计数，不区分状态码、
+            # 不带上游耗时，那类问题还得看 access.log；这里只提供整体量：
+            #   nginx_requests                          # 累计处理请求数（counter，用 rate()）
+            #   nginx_active / nginx_reading / nginx_writing / nginx_waiting  # 当前连接数
+            #   nginx_accepts / nginx_handled           # 累计 accept 数 / 成功 handled 数
+            # accepts 增长但 handled 不跟 = 有连接被丢弃，通常是 worker_connections 不够
+            # （error.log 里的 "worker_connections are not enough"）。
+            # 请求失败率看 http_response 探针，不看这里。
+            nginx = {
+              urls = [ "http://127.0.0.1:9113/nginx_status" ];
+              response_timeout = "5s";
+            };
+
             # --- 下面几条是给 srvos 默认规则提供数据源的，删掉对应的规则就哑了 ---
 
             # Load15 / Uptime / Reboot（system_load15、system_uptime）
