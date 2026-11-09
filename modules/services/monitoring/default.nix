@@ -2,7 +2,7 @@
 {
   flake.nixosModules.monitoring = {
     imports = with self.nixosModules; [
-      uptime-kuma
+      # uptime-kuma
       telegraf
       victoriametrics
       vmalert

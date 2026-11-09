@@ -24,6 +24,7 @@
           inputs = {
             # 常用的查询（VictoriaMetrics UI 或 Grafana 里）：
             #   x509_cert_expiry{type="leaf",site="lubui.com"} / 86400   # 证书剩余天数
+            #   (whois_expiration_timestamp{domain="lubui.com"} - time()) / 86400  # 域名注册剩余天数
             #   http_response_result_code{site="lubui.com"}              # 0 = 请求成功
             #   http_response_response_time{site="lubui.com"}            # 响应耗时（秒）
             #   systemd_units_active_code != 0                           # 非 active 的 systemd 单元
@@ -35,7 +36,11 @@
             # 第一个采样点要等满一个 interval 才出现（实测 6h 的插件启动 8s 后指标数是 0）。
             # 而且 prometheus_client 只把指标缓存在内存里，telegraf 一重启，
             # 稀疏指标就从 /metrics 里消失，直到下次采集 —— 看板上就是一个大洞。
-            # 所以采集一律用分钟级，想降采样放到 VictoriaMetrics 那边做。
+            # 所以面向本机的采集一律用分钟级，想降采样放到 VictoriaMetrics 那边做。
+            #
+            # 唯一的例外是下面的 whois：它查的是外部 WHOIS 服务器（有限流），
+            # 分钟级就是一天上千次查询。那里用 6h，并且靠 vmalert 的
+            # WhoisMetricMissing（24h 窗口）兜住「重启后没数据」这段空窗。
 
             # 网站可用性：状态码 200 且请求能完成才算 result_code == 0
             #
@@ -81,6 +86,25 @@
                 timeout = "10s";
                 interval = "10m";
                 tags.site = "home.lubui.com";
+              }
+            ];
+
+            # 域名注册到期（WHOIS，默认先问 whois.iana.org 拿到 TLD 的权威 server，
+            # .com 实际查的是 whois.verisign-grs.com；注册信息里的到期日是权威的）。
+            # 指标（string 字段会变成 label，所以带 registrar/status 等）：
+            #   whois_expiration_timestamp{domain=...}  # 绝对到期时间（unix 秒），0 = 没查到
+            #   whois_expiry{domain=...}               # 采样当时还剩多少秒
+            # 告警规则只用绝对时间戳，因为 expiry 会被采样间隔（6h）带偏。
+            #
+            # interval 必须显式写：不写就继承 agent 的 60s，一天 1440 次 WHOIS 查询，
+            # 既浪费又容易被注册商限流。到期日一年才变一次，6h 完全够。
+            # 代价是 telegraf 重启后最多 6h 才出现第一个采样点（见上面注意事项），
+            # 所以 vmalert 里“采集缺失”那条用的是 24h 窗口而不是 15m。
+            whois = [
+              {
+                domains = [ "lubui.com" ];
+                interval = "6h";
+                timeout = "30s";
               }
             ];
 
