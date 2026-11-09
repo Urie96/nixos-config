@@ -136,10 +136,10 @@
           # 让新 SSO 用户自动进这个组（组要先在网页里建好，权限配一次就行；
           # 组还不存在时 paperless 只是 filter 不到，不会报错）。
           PAPERLESS_SOCIAL_ACCOUNT_DEFAULT_GROUPS = "editors";
-          # 进登录页直接跳 SSO。authelia 的会话通常还在（前面 forward-auth 刚登过），
-          # 所以看到的是「闪一下 → 已登录」，不用再输一次密码。
-          # 本地 admin 的表单登录仍然可用（没被 DISABLE_REGULAR_LOGIN 关掉），
-          # 万一 OIDC 配错还能从登录页 / Django admin 进去救急。
+          # 进登录页直接跳 SSO，authelia 已有会话时整个流程是静默的（闪一下 → 已登录），
+          # 不用再输一次密码；这也是这台不挂 forward-auth 之后唯一的登录入口。
+          # 本地 admin 的密码表单仍在，但前端那个表单会被这个重定向跳过，
+          # 要登录 admin 走 Django admin 自己的登录页：/admin/login/。
           PAPERLESS_REDIRECT_LOGIN_TO_SSO = true;
           # nginx 是唯一的入口，X-Forwarded-For 里的客户端 IP 可信；这也让
           # allauth 的限流按真实客户端算，而不是所有人共用 127.0.0.1 一个桶。
@@ -166,19 +166,18 @@
         addSSL = true;
         useACMEHost = "lubui.com";
 
-        # 公网可达（WAN 开了 8443），入口先过 authelia。
+        # 故意不挂 authelia 的 forward-auth（和 modules/services/lldap.nix 一个道理）。
         #
-        # 这里只挡门、不透传身份：paperless 能信任反代来的 Remote-User
-        # （PAPERLESS_ENABLE_HTTP_REMOTE_USER），但那样自动建出来的账号没有任何权限，
-        # 要额外加一个 Django app 发权限（参考仓库就是这么改的）。现在改成让
-        # paperless 自己走 OIDC，身份和权限都由 paperless 管。
-        extraConfig = config.my.authelia.nginxSsoConfig;
-
+        # paperless 自己有完整认证（OIDC + 本地 admin），再套一层门禁的后果是：
+        #   - 两次登录体感：先过 authelia，进了 paperless 再被 JS 跳一次 SSO；
+        #   - `/admin/login/` 也被挡在门禁后面，本地 admin 页面根本进不去（门禁是
+        #     server 级的，跟路径无关）。
+        # 现在“谁能进来”只由 paperless 自己决定，authelia 只在你登 SSO 时才参与。
+        #
+        # 代价：paperless 自己的登录页（含本地 admin 的密码表单）和 Django admin
+        # 直接暴露在公网 8443 上，成为可爆破的密码入口。只有一两个真人用户，
+        # 而且 authelia 挂掉时还能用 admin 进来救急，接受这个代价。
         locations = {
-          "/authelia" = {
-            extraConfig = config.my.authelia.nginxVerifyLocation;
-          };
-
           # 静态文件由 nginx 直接给（Django 在 DEBUG=false 下不服务它们），
           # 路径和 nixpkgs 模块自己 configureNginx 时的写法一致。
           "/static/" = {
