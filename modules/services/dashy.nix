@@ -151,6 +151,12 @@
                   icon = "https://memos.lubui.com:8443/logo.webp";
                   url = "https://memos.lubui.com:8443";
                 })
+                (ifEnabled config.services.paperless.enable {
+                  title = "Paperless-ngx";
+                  description = "文档扫描归档";
+                  icon = "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/paperless-ngx.png";
+                  url = "https://paperless.lubui.com:8443";
+                })
                 (always {
                   title = "Code Notes";
                   description = "我的笔记";

@@ -377,6 +377,71 @@
         },
         "overrides": []
       }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "域名剩余天数（天）",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "victoriametrics"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 10,
+        "x": 0,
+        "y": 19
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "victoriametrics"
+          },
+          "expr": "(max by (domain) (last_over_time(whois_expiration_timestamp[8h])) - time()) / 86400",
+          "legendFormat": "{{domain}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "orientation": "horizontal",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 7
+              },
+              {
+                "color": "green",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "description": "域名注册到期还剩几天（(last_over_time(whois_expiration_timestamp[8h]) - time()) / 86400）。whois 6h 才采一次，所以用 last_over_time 取最近已知值，否则大部分时间这条曲线是空的。和左边的「证书剩余天数」不是一回事：证书由 ACME 自动续，域名注册要手动续费。vmalert 在 <30 天 warning、<=7 天 critical。"
     }
   ]
 }
