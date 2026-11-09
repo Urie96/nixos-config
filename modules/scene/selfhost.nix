@@ -32,6 +32,7 @@
       pairdrop
       monitoring
       immich
+      paperless
       jellyfin-server
       love-yue
       interval-web
