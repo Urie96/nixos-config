@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# 把选中的文件发送到 paperless-ngx（yazi 的 paperless opener 调用）。
+#
+# 用法: send-to-paperless <文件>...
+#
+# token 从环境变量 PAPERLESS_TOKEN 读，由 fish wrapper 在 shellInit 里
+# source load-secrets.fish 时导出（refresh-secrets 重新生成），yazi 从 fish
+# 启动就直接继承，脚本自己不做任何解密。
+set -uo pipefail
+
+API="https://paperless.lubui.com:8443/api/documents/post_document/"
+
+if [[ $# -eq 0 ]]; then
+  echo "没有选中任何文件" >&2
+  exit 1
+fi
+
+# yazi 的 `open --interactive` / 规则里选中目录时也会走到这里，直接跳过。
+files=()
+for file in "$@"; do
+  if [[ -f "$file" ]]; then
+    files+=("$file")
+  else
+    echo "跳过（不是普通文件）: $file" >&2
+  fi
+done
+
+if [[ ${#files[@]} -eq 0 ]]; then
+  echo "没有可上传的文件" >&2
+  exit 1
+fi
+
+token="${PAPERLESS_TOKEN:-}"
+if [[ -z "$token" ]]; then
+  echo "PAPERLESS_TOKEN 未设置" >&2
+  exit 1
+fi
+
+failed=0
+# yazi 的 block opener 里 stderr 是终端，显示上传进度条（百分比、速度、剩余时间）；
+# stderr 被重定向时不刷进度，避免日志里塞满 \r。
+if [[ -t 2 ]]; then
+  curl_opts=(--progress-bar --show-error)
+else
+  curl_opts=(--silent --show-error)
+fi
+
+for file in "${files[@]}"; do
+  echo "上传: $file"
+  # --fail-with-body: HTTP 4xx/5xx 也算失败，同时保留 paperless 返回的错误信息。
+  if response="$(curl "${curl_opts[@]}" --fail-with-body \
+    -H "Authorization: Token ${token}" \
+    -F "document=@${file}" \
+    "$API")"; then
+    # paperless 返回的是任务 id（JSON 字符串，带引号）
+    echo "已提交: $file → $response"
+  else
+    echo "上传失败: $file" >&2
+    echo "$response" >&2
+    failed=1
+  fi
+done
+
+if [[ $failed -ne 0 ]]; then
+  echo "有文件上传失败" >&2
+fi
+exit "$failed"
