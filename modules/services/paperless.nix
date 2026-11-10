@@ -96,7 +96,7 @@
       services.paperless = {
         enable = true;
         address = "127.0.0.1";
-        port = 28981;
+        port = 3117;
         domain = "paperless.lubui.com";
         # systemd 以 root 读出来经 LoadCredential 交给服务，secret 本体不进
         # nix store，也不需要 chown 给 paperless。
@@ -145,10 +145,12 @@
           # allauth 的限流按真实客户端算，而不是所有人共用 127.0.0.1 一个桶。
           PAPERLESS_TRUSTED_PROXIES = "127.0.0.1";
 
-          # 中文扫描件是主要场景，顺手保留英文合同/发票
+          # 中文扫描件是主要场景，顺手保留英文合同/发票。
           PAPERLESS_OCR_LANGUAGE = "chi_sim+eng";
-          # 时区由模块从 config.time.timeZone 注入，不用写 PAPERLESS_TIME_ZONE
+          PAPERLESS_OCR_MODE = "auto";
 
+          # 显式关掉 AI
+          PAPERLESS_AI_ENABLED = false;
           PAPERLESS_TASK_WORKERS = 2;
           PAPERLESS_THREADS_PER_WORKER = 1;
           PAPERLESS_CONSUMER_RECURSIVE = true;
