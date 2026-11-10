@@ -8,6 +8,12 @@
       pkgs,
       ...
     }:
+    let
+      # paperless opener 的脚本。
+      sendToPaperless = pkgs.writeShellScript "send-to-paperless" (
+        builtins.readFile ./scripts/send-to-paperless
+      );
+    in
     {
       imports = [
         wlib.wrapperModules.yazi
@@ -83,6 +89,17 @@
               use = [
                 "pdf_to_png"
                 "reveal"
+                "paperless"
+              ];
+            }
+            # 默认的 image/* 规则（open + reveal）加上 paperless，
+            # 这样图片也能从 `r`（open --interactive）里选到。
+            {
+              mime = "image/*";
+              use = [
+                "open"
+                "reveal"
+                "paperless"
               ];
             }
             {
@@ -139,6 +156,18 @@
                 apksigner verify --verbose --print-certs "$OUTPUT"
               ''} %s1";
               desc = "Sign .apk";
+              block = true;
+            }
+          ];
+          # 发送到 paperless-ngx。token 直接用环境变量 PAPERLESS_TOKEN，
+          # 该变量由 fish wrapper 的 load-secrets.fish 导出，yazi 从 fish 启动即继承。
+          # 要让它对其它类型也在 `r` 里可见，把 "paperless" 加进对应规则的 `use`。
+          paperless = [
+            {
+              run = "${sendToPaperless} %s";
+              desc = "Send to Paperless";
+              # 一次调用拿到全部选中项，脚本里逐个上传，输出不会交错。
+              spread = true;
               block = true;
             }
           ];
