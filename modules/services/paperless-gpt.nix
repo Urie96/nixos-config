@@ -17,7 +17,12 @@
       paperlessUrl = "http://127.0.0.1:${toString config.services.paperless.port}";
 
       # 每个 provider 用不同的环境变量名，只有一处映射，别在别处再写一遍。
+      # paperless-gpt 按「协议」而不是「厂商」命名 provider：
+      # LLM_PROVIDER=openai 就是「任何 OpenAI chat-completions 兼容端点」，
+      # 配合 OPENAI_BASE_URL 指到 DeepSeek，key 也放 OPENAI_API_KEY 里。
       llmProvider = "openai";
+      llmModel = "deepseek-flash";
+      llmBaseUrl = "https://api.deepseek.com";
       apiKeyEnv = {
         openai = "OPENAI_API_KEY";
         anthropic = "ANTHROPIC_API_KEY";
@@ -54,9 +59,9 @@
           type = "line";
           persist = true;
           description = ''
-            LLM 服务商的 API key（provider = ${llmProvider}）。
-            端点不需要鉴权时随便填一个占位值即可，比如 local。
-            provider 换成 anthropic/mistral/googleai 时重新 `clan vars regenerate` 填新 key。
+            LLM 服务商的 API key：填 DeepSeek 的 key
+            （platform.deepseek.com → API keys）。它会以 OPENAI_API_KEY 的名字
+            传给 paperless-gpt，因为那条路径说的是 OpenAI 协议而不是厂商。
           '';
         };
 
@@ -98,14 +103,21 @@
           PAPERLESS_BASE_URL = paperlessUrl;
 
           LLM_PROVIDER = llmProvider;
-          LLM_MODEL = "gpt-4o";
+          LLM_MODEL = llmModel;
+          OPENAI_BASE_URL = llmBaseUrl;
+          # DeepSeek 的思考模式默认开启（effort=high），官方关闭方式是在请求体里带
+          # {"thinking":{"type":"disabled"}}。上游 paperless-gpt 没有透传额外字段的入口，
+          # 靠 nur-packages 的 openai-extra-body patch 提供的 OPENAI_EXTRA_BODY 注入。
+          # 思考 token 按输出计费，且会拖慢每一页 OCR。
+          OPENAI_EXTRA_BODY = "{\"thinking\":{\"type\":\"disabled\"}}";
           # 文档主要是中文，让标题/标签尽量输出中文。
           LLM_LANGUAGE = "Chinese";
 
           # OCR 走视觉模型，provider / key 与上面元数据那条共用。
           OCR_PROVIDER = "llm";
           VISION_LLM_PROVIDER = llmProvider;
-          VISION_LLM_MODEL = "gpt-4o";
+          # deepseek-flash 同时是视觉模型（接受 image_url/data URL），OCR 和元数据共用。
+          VISION_LLM_MODEL = llmModel;
           # page routing 只在 image 模式生效，且本次运行要产可搜索 PDF/hOCR 时自动关闭。
           OCR_PROCESS_MODE = "image";
 
@@ -119,13 +131,14 @@
           # 「扫描图 + 隐形文字层」仍然会被送去重新 OCR，这正是我们要的。
           OCR_SKIP_DIGITAL_PAGES = "true";
 
-          # 送模型前先压图：默认值（600 DPI / 4000 万像素 / 10 MiB）对视觉模型是浪费，
-          # 它内部还会再缩到 ~2048 长边。这里按 A4 算约 220 DPI、4.7M 像素、JPEG ≤3 MiB。
-          # 再往下压（<150 DPI）会开始伤中文小字的识别率。
-          IMAGE_MAX_RENDER_DPI = "220";
-          IMAGE_MAX_PIXEL_DIMENSION = "2600";
-          IMAGE_MAX_TOTAL_PIXELS = "5000000";
-          IMAGE_MAX_FILE_BYTES = "3145728";
+          # 送模型前先压图。注意：DeepSeek 会把图片统一缩到约 1300x1300 再算 token，
+          # 单图上限 1024 token —— 所以这几个值只影响本地上传/CPU，不影响账单。
+          # A4 约 200 DPI / 420 万像素 / JPEG ≤2 MiB，足够撑住被缩到 1300 后的清晰度；
+          # 再往上加对 DeepSeek 没有收益，再往下压（<150 DPI）会伤中文小字。
+          IMAGE_MAX_RENDER_DPI = "200";
+          IMAGE_MAX_PIXEL_DIMENSION = "2048";
+          IMAGE_MAX_TOTAL_PIXELS = "4000000";
+          IMAGE_MAX_FILE_BYTES = "2097152";
 
           # 渲染页面/OG 预览图的缓存，默认落在 /tmp，这里给它一个持久目录。
           PAPERLESS_GPT_CACHE_DIR = "/var/cache/paperless-gpt";

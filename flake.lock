@@ -713,11 +713,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1794375182,
-        "narHash": "sha256-xX5zVFNpZ0d0XsD4go0QhW2kG+oiAQlFHcjZlB6IJiA=",
+        "lastModified": 1794382554,
+        "narHash": "sha256-2dmy7b0mQdaN1pfMVtibWcWcpyMazKPHceOsKL/olqQ=",
         "owner": "Urie96",
         "repo": "nur-packages",
-        "rev": "87ce740b855c71e1eafbed19e8a30d2e7faba725",
+        "rev": "9e466c20c3b15e47b32f8c8b2e12c5c40d3c84e7",
         "type": "github"
       },
       "original": {
