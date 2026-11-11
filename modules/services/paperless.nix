@@ -120,7 +120,10 @@
           # 但实际入口是 :8443，不覆盖的话邮件、分享链接、OIDC 回调全是错的地址。
           PAPERLESS_URL = lib.mkForce url;
           # 除了 nginx 转发过来的域名，还允许 127.0.0.1：
-          PAPERLESS_ALLOWED_HOSTS = "paperless.lubui.com 127.0.0.1";
+          # paperless-gpt（modules/services/paperless-gpt.nix）在本机直连
+          # 127.0.0.1:28981 走 API，Django 的 Host 校验会把 127.0.0.1:28981 拒掉
+          # （400 DisallowedHost），所以这里要放行本机地址。
+          PAPERLESS_ALLOWED_HOSTS = "paperless.lubui.com,127.0.0.1";
           PAPERLESS_CSRF_TRUSTED_ORIGINS = url;
 
           # 本地兜底管理员。别用 urie：SSO 首次登录会按 preferred_username 建一个
