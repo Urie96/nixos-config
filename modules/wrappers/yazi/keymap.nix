@@ -86,7 +86,7 @@
             }
             {
               on = [ "I" ];
-              run = "shell '${pkgs.writeShellScript "init-dev" (builtins.readFile ./scripts/init-dev)}' --block";
+              run = "shell 'nix flake init -t github:urie96/devshell' --block";
               desc = "Init development env";
             }
             {

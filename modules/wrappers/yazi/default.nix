@@ -193,9 +193,21 @@
         plugin = {
           preloaders = [ ];
           prepend_previewers = [
+            # 图片统一交给 preview-bin（包括 pdf 页、视频缩略图、raf/svg 转换出来的图）：
+            # 它在 SSH 会话里用 chafa 输出 Unicode 块字符，不再通过连接传 kitty/sixel
+            # 图片数据；非 SSH 会话仍是 ya.image_show。
+            # 下面两条是 yazi 内置解码不支持的格式，仍走内置插件。
+            {
+              run = "magick";
+              mime = "image/{avif,hei?,jxl}";
+            }
+            {
+              run = "svg";
+              mime = "image/svg+xml";
+            }
             {
               run = "preview-bin";
-              mime = "image/fuji-raf";
+              mime = "image/*";
             }
           ];
           append_previewers = [
