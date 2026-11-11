@@ -157,6 +157,12 @@
                   icon = "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/paperless-ngx.png";
                   url = "https://paperless.lubui.com:8443";
                 })
+                (ifEnabled (config.systemd.services ? paperless-gpt) {
+                  title = "paperless-gpt";
+                  description = "扫描件重新识别 / 元数据建议";
+                  icon = "https://paperless-gpt.lubui.com:8443/favicon.ico";
+                  url = "https://paperless-gpt.lubui.com:8443";
+                })
                 (always {
                   title = "Code Notes";
                   description = "我的笔记";

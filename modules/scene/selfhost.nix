@@ -33,6 +33,7 @@
       monitoring
       immich
       paperless
+      paperless-gpt
       jellyfin-server
       love-yue
       interval-web
