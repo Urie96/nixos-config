@@ -38,6 +38,12 @@
         hf = PaddlePaddle/PaddleOCR-VL-1.6-GGUF
         ctx-size = 8192
         temp = 0
+        ; 让 llama-server 把 <|LOC_i|> / <|LOC_SEP|> 这类特殊 token 原样写进
+        ; choices[].content（默认 --special=false 会把它们 detokenize 成空字符串）。
+        ; 只在本段开，不影响上面两个 Qwen。
+        ; 开了以后客户端可以直接用正则 <\|LOC_(\d+)\|> 解坐标，
+        ; 不必再依赖 logprobs（响应体会小一个数量级）。
+        special = true
       '';
     in
     {
@@ -47,6 +53,7 @@
 
         # 不设 settings.model/hf-repo → router 模式：按请求里的 model 字段懒加载
         settings = {
+          port = 3119; # 原来是默认的 8080
           models-preset = modelsPreset;
           models-max = 2; # 同时只驻留 2 个模型，切换时按 LRU 卸载
           sleep-idle-seconds = 300; # 空闲 5 分钟连权重和 KV cache 一起释放
