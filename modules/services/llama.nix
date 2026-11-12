@@ -12,15 +12,32 @@
         temp = 0.7
         repeat-penalty = 1.05
         top-k = 80
+        ; preset 和 LLAMA_CACHE 里已下载的同一个模型文件只显示一条（否则 /models 会重复）
+        dedup-cache-models = 1
 
-        [Qwen2.5-7B-Instruct]
-        hf = Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M
+        ; Qwen3.5-9B：多模态（mmproj 随 hf 自动下载），默认 thinking 模式，
+        ; 采样参数取官方 thinking 推荐值。权重 5.56 GiB + mmproj 0.86 GiB，KV 另算。
+        [Qwen3.5-9B]
+        hf = unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL
+        ctx-size = 16384
+        temp = 1.0
+        top-p = 0.95
+        top-k = 20
+        repeat-penalty = 1.0
+        presence-penalty = 1.5
+
+        ; PaddleOCR-VL-1.6：0.9B 文档解析 VLM（NaViT 视觉塔 + ERNIE-4.5-0.3B），
+        ; 权重 892 MiB + mmproj 841 MiB（官方仓库只有 F16），mmproj 随 hf 自动下载。
+        ; 必须 temp 0，否则输出发散。它不是通用对话模型，prompt 只用固定指令：
+        ; OCR: / Table Recognition: / Formula Recognition: / Chart Recognition: /
+        ; Seal Recognition: / Spotting:（Spotting 需把 mmproj 的 clip.vision.image_max_pixels
+        ; 从 1003520 调到 1605632，model 自带的默认值够 OCR/表格用）。
+        ; 注意：这里只做元素级识别；整页版面解析要用 PaddleOCR 的 pipeline，
+        ; 把 vl_rec_backend 指到 llama-cpp-server + 本服务的 /v1。
+        [PaddleOCR-VL-1.6]
+        hf = PaddlePaddle/PaddleOCR-VL-1.6-GGUF
         ctx-size = 8192
-
-        ; 第二个模型示例（换成自己的仓库和量化）：
-        ; [Other-Model-7B]
-        ; hf = <user>/<repo-GGUF>:Q4_K_M
-        ; ctx-size = 8192
+        temp = 0
       '';
     in
     {
@@ -31,7 +48,7 @@
         # 不设 settings.model/hf-repo → router 模式：按请求里的 model 字段懒加载
         settings = {
           models-preset = modelsPreset;
-          models-max = 1; # 同时只驻留 1 个模型，切换时按 LRU 卸载
+          models-max = 2; # 同时只驻留 2 个模型，切换时按 LRU 卸载
           sleep-idle-seconds = 300; # 空闲 5 分钟连权重和 KV cache 一起释放
         };
       };
