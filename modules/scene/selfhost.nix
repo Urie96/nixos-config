@@ -1,6 +1,7 @@
 { self, ... }: {
   flake.nixosModules.selfhost = {
     imports = with self.nixosModules; [
+      llama
       avahi
       kea
       umami
