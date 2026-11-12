@@ -4,10 +4,12 @@
       config,
       lib,
       pkgs,
+      inputs',
       ...
     }:
     let
       cfg = config.services.paperless;
+      nur = inputs'.nur-packages.packages;
       # nginx 的 defaultSSLListenPort 是 8443，所有 vhost 的外部 URL 都要带端口
       url = "https://paperless.lubui.com:8443";
       autheliaUrl = config.my.authelia.url;
@@ -20,6 +22,26 @@
       oidcProviderId = "authelia";
       oidcCallback = "${url}/accounts/oidc/${oidcProviderId}/login/callback/";
       gen = config.clan.core.vars.generators.paperless-oidc;
+
+      # —— OCR 引擎：PaddleOCR（PP-OCRv6 medium）+ ONNX Runtime ——
+      #
+      # 打包全在 NUR 里（nur-packages/pkgs/{paperless,ocrmypdf,ocrmypdf-paddle,
+      # tesseract-slim}），这里只留三条会影响本模块写法的前置结论：
+      #
+      #   1. paperless 调的是 ocrmypdf 的 **Python API**（`ocrmypdf.ocr(**args)`），
+      #      而 ocrmypdf 初始化时无条件执行
+      #        pluggy_manager.load_setuptools_entrypoints('ocrmypdf')
+      #      所以插件只要在同一个 python 环境里就会被自动注册；插件实现的
+      #      get_ocr_engine() 是 firstresult hook，pluggy 按「后注册先调用」，
+      #      于是顶掉内置 tesseract 引擎 —— paperless 侧不需要任何开关，
+      #      也不用往 PAPERLESS_OCR_USER_ARGS 里塞 --plugin。
+      #   2. 整个 python 环境是 3.13：paddlepaddle 只出到 cp313 的 wheel，
+      #      而 nixpkgs 的 python3Packages 已经是 3.14。
+      #   3. NUR 那个 derivation 是 pkgs.callPackage 出来的，所以保留了 `.override`：
+      #      services.paperless.package 有个 apply 钩子，会对最终值再调一次
+      #        pkg.override { tesseract5 = pkg.tesseract5.override { enableLanguages = ...; }; }
+      #      而 `pkg.tesseract5` 来自 nixpkgs paperless-ngx 的 passthru —— 这也是
+      #      下面 tesseractLanguages 还能生效的原因。
     in
     {
       clan.core.vars.generators.paperless = {
@@ -95,6 +117,8 @@
 
       services.paperless = {
         enable = true;
+        # PaddleOCR 那套打包在 NUR 里，见上面注释
+        package = nur.paperless;
         address = "127.0.0.1";
         port = 3117;
         domain = "paperless.lubui.com";
@@ -110,17 +134,28 @@
         # 这里只是追加 ensureDatabases / ensureUsers）。
         database.createLocally = true;
 
-        # 保持 null = tesseract 用「全部语言」的默认包，能命中 binary cache。
-        # 如果让它从 PAPERLESS_OCR_LANGUAGE 推导成 [ "chi_sim" "eng" ]，
-        # tesseract / ocrmypdf / paperless-ngx 这一大串都得从源码重编。
-        tesseractLanguages = null;
+        # OCR 引擎现在是 PaddleOCR，tesseract 只剩「ocrmypdf 启动时会无条件
+        # 跑一次 `tesseract --version`」这一个用途（内置 tesseract 插件的
+        # check_options 不看 engine 选择，pluggy 会把所有 check_options 都跑）。
+        # 所以留一个最小可用的 tesseract：语言包只编这里列的 + 模块固定追加的
+        # eng/equ/osd（模块的 apply 钩子会
+        #   unique(["equ" "osd" "eng"] ++ 这里的列表)
+        # 传给 nur.paperless.tesseract5.override），tessdata 从 1.0 GiB 降到 ~25 MiB。
+        # 彻底去掉得把 tesseract 换成只回 --version 的假二进制，不值得。
+        tesseractLanguages = [
+          "chi_sim"
+          "eng"
+        ];
 
         settings = {
           # 模块会用 domain 生成 https://paperless.lubui.com（没有端口），
           # 但实际入口是 :8443，不覆盖的话邮件、分享链接、OIDC 回调全是错的地址。
           PAPERLESS_URL = lib.mkForce url;
           # 除了 nginx 转发过来的域名，还允许 127.0.0.1：
-          PAPERLESS_ALLOWED_HOSTS = "paperless.lubui.com 127.0.0.1";
+          # paperless-gpt（modules/services/paperless-gpt.nix）在本机直连
+          # 127.0.0.1:28981 走 API，Django 的 Host 校验会把 127.0.0.1:28981 拒掉
+          # （400 DisallowedHost），所以这里要放行本机地址。
+          PAPERLESS_ALLOWED_HOSTS = "paperless.lubui.com,127.0.0.1";
           PAPERLESS_CSRF_TRUSTED_ORIGINS = url;
 
           # 本地兜底管理员。别用 urie：SSO 首次登录会按 preferred_username 建一个
