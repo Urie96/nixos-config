@@ -266,6 +266,12 @@
           ];
           PAPERLESS_FILENAME_FORMAT = "{created_year}/{correspondent}/{title}";
           PAPERLESS_FILENAME_FORMAT_REMOVE_NONE = true;
+          # 关掉「Check all e-mail accounts」这条 celery beat 任务（默认每 10 分钟
+          # 跑 paperless_mail.tasks.process_mail_accounts）。"disable" 是
+          # paperless/settings/custom.py:parse_beat_schedule() 认的哨兵值，
+          # 等于把该条目从 beat schedule 里删掉，不是改成某个奇怪的 cron。
+          # 想恢复就删掉这行（或写成 "*/10 * * * *"）。
+          PAPERLESS_EMAIL_TASK_CRON = "disable";
         };
       };
 
