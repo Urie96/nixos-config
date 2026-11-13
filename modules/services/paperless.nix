@@ -4,12 +4,11 @@
       config,
       lib,
       pkgs,
-      inputs',
+      self,
       ...
     }:
     let
       cfg = config.services.paperless;
-      nur = inputs'.nur-packages.packages;
       # nginx 的 defaultSSLListenPort 是 8443，所有 vhost 的外部 URL 都要带端口
       url = "https://paperless.lubui.com:8443";
       autheliaUrl = config.my.authelia.url;
@@ -21,27 +20,62 @@
       oidcClientId = "paperless";
       oidcProviderId = "authelia";
       oidcCallback = "${url}/accounts/oidc/${oidcProviderId}/login/callback/";
-      gen = config.clan.core.vars.generators.paperless-oidc;
+      gen = config.clan.core.vars.generators.paperless-secrets;
 
-      # —— OCR 引擎：PaddleOCR（PP-OCRv6 medium）+ ONNX Runtime ——
+      # —— OCR 引擎：RapidOCR（PP-OCRv6）+ ONNX Runtime，替掉内置 tesseract ——
       #
-      # 打包全在 NUR 里（nur-packages/pkgs/{paperless,ocrmypdf,ocrmypdf-paddle,
-      # tesseract-slim}），这里只留三条会影响本模块写法的前置结论：
+      # 三条决定这里写法的事实：
       #
       #   1. paperless 调的是 ocrmypdf 的 **Python API**（`ocrmypdf.ocr(**args)`），
-      #      而 ocrmypdf 初始化时无条件执行
-      #        pluggy_manager.load_setuptools_entrypoints('ocrmypdf')
-      #      所以插件只要在同一个 python 环境里就会被自动注册；插件实现的
-      #      get_ocr_engine() 是 firstresult hook，pluggy 按「后注册先调用」，
-      #      于是顶掉内置 tesseract 引擎 —— paperless 侧不需要任何开关，
-      #      也不用往 PAPERLESS_OCR_USER_ARGS 里塞 --plugin。
-      #   2. 整个 python 环境是 3.13：paddlepaddle 只出到 cp313 的 wheel，
-      #      而 nixpkgs 的 python3Packages 已经是 3.14。
-      #   3. NUR 那个 derivation 是 pkgs.callPackage 出来的，所以保留了 `.override`：
-      #      services.paperless.package 有个 apply 钩子，会对最终值再调一次
-      #        pkg.override { tesseract5 = pkg.tesseract5.override { enableLanguages = ...; }; }
-      #      而 `pkg.tesseract5` 来自 nixpkgs paperless-ngx 的 passthru —— 这也是
-      #      下面 tesseractLanguages 还能生效的原因。
+      #      而 ocrmypdf 建插件管理器时无条件执行
+      #        load_setuptools_entrypoints('ocrmypdf')
+      #      它扫的是 **sys.path 上的 dist-info**，所以插件只要出现在 PYTHONPATH
+      #      里就会被自动注册；get_ocr_engine() 是 firstresult hook，pluggy 按
+      #      「后注册先调用」，于是顶掉内置 tesseract 引擎。
+      #      → paperless 侧不需要 --plugin，也不需要塞任何参数。
+      #
+      #   2. NixOS 模块的 `extraPythonPackages` 只做一件事：把这些包的
+      #      site-packages 拼进服务的 PYTHONPATH（makePythonPath 会递归展开
+      #      propagated 依赖，所以只列插件一个就够）。它不碰
+      #      services.paperless.package，派生和 cache.nixos.org 完全一致。
+      #
+      #   3. 以前 NUR 里那套做法是「换 python scope + 把插件挂到 ocrmypdf 的
+      #      dependencies 上」，那会让 tesseract / ocrmypdf / paperless-ngx
+      #      三个包全退出官方缓存。现在那种改法已经不需要了。
+      #
+      # 必须用 ps（= cfg.package.python.pkgs，即 paperless 自己那套 scope）构建：
+      # PYTHONPATH 排在 site-packages **之前**，用别的 scope 构建会把 paperless
+      # 的 ocrmypdf/pillow 盖掉。
+      #
+      # 源码用 fetchFromGitHub 取固定 rev（不用 flake input：这里只要源码树，
+      # 不要它的 flake 输出，也避免给 nixos-config 多养一个 follow）。
+      # 升级：改 rev，再把 hash 换成 `nix flake prefetch --json <url>` 的 hash。
+      rapidocrPlugin =
+        ps:
+        ps.buildPythonPackage {
+          pname = "ocrmypdf-rapidocr";
+          version = "0.3.0";
+          pyproject = true;
+          src = pkgs.fetchFromGitHub {
+            owner = "Urie96";
+            repo = "ocrmypdf-paddle-plugin";
+            rev = "a0c11cd5065cba357d4e2305c79b3eae4c949380";
+            hash = "sha256-5GEwFt27cZEdKH1jE7BvytuHmdaQUY/BkyqOg8sufS4=";
+          };
+
+          build-system = [ ps.setuptools ];
+          dependencies = with ps; [
+            ocrmypdf
+            rapidocr
+            onnxruntime
+            pillow
+          ];
+
+          # 23 个用例全是不需要模型/网络的冒烟测试
+          nativeCheckInputs = [ ps.pytest ];
+          doCheck = true;
+          pythonImportsCheck = [ "ocrmypdf_rapidocr" ];
+        };
     in
     {
       clan.core.vars.generators.paperless = {
@@ -55,12 +89,16 @@
         files.admin-password = { };
       };
 
-      # OIDC 客户端凭据：明文给 paperless（下面塞进 EnvironmentFile，不进 nix store），
-      # pbkdf2 摘要给 authelia（它的 YAML 只收摘要）。
-      clan.core.vars.generators.paperless-oidc = {
+      # paperless 里那些「必须是环境变量、又不能进 nix store」的凭据：
+      # OIDC client_secret：明文给 paperless（下面塞进 EnvironmentFile，
+      # 不进 nix store），pbkdf2 摘要给 authelia（它的 YAML 只收摘要）。
+      #
+      # AI 后端是本机 llama-server，不校验 Authorization，所以不需要 AI 的 key。
+      clan.core.vars.generators.paperless-secrets = {
         files.client-secret = { };
         files.client-secret-hash.secret = false;
         files.env = { };
+
         runtimeInputs = with pkgs; [
           coreutils
           openssl
@@ -117,8 +155,14 @@
 
       services.paperless = {
         enable = true;
-        # PaddleOCR 那套打包在 NUR 里，见上面注释
-        package = nur.paperless;
+        # 故意不设 package：默认就是 pkgs.paperless-ngx，和官方缓存一字不差
+        # （实测 drvPath 与 stock 完全相同）。OCR 走 extraPythonPackages 注入。
+        #
+        # 想换回 NUR 那个「paperless_ai 依赖打空壳」的精简版，就写
+        #   package = self.inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system}.paperless;
+        # 代价是 paperless-ngx 本地重建；省下的是 AI 那套 embedding 依赖
+        # （torch 等约 3.4 GiB），现在这些全部来自缓存。
+        extraPythonPackages = ps: [ (rapidocrPlugin ps) ];
         address = "127.0.0.1";
         port = 3117;
         domain = "paperless.lubui.com";
@@ -134,27 +178,24 @@
         # 这里只是追加 ensureDatabases / ensureUsers）。
         database.createLocally = true;
 
-        # OCR 引擎现在是 PaddleOCR，tesseract 只剩「ocrmypdf 启动时会无条件
-        # 跑一次 `tesseract --version`」这一个用途（内置 tesseract 插件的
-        # check_options 不看 engine 选择，pluggy 会把所有 check_options 都跑）。
-        # 所以留一个最小可用的 tesseract：语言包只编这里列的 + 模块固定追加的
-        # eng/equ/osd（模块的 apply 钩子会
-        #   unique(["equ" "osd" "eng"] ++ 这里的列表)
-        # 传给 nur.paperless.tesseract5.override），tessdata 从 1.0 GiB 降到 ~25 MiB。
-        # 彻底去掉得把 tesseract 换成只回 --version 的假二进制，不值得。
-        tesseractLanguages = [
-          "chi_sim"
-          "eng"
-        ];
+        # tesseract 现在只剩一个用途：ocrmypdf 启动时内置 tesseract 插件的
+        # check_options 会跑 `tesseract --version`（pluggy 会把所有插件的
+        # check_options 都跑，不看引擎选择）。
+        #
+        # null = 不裁语言包。这个值直接决定 services.paperless.package 的
+        # drvPath：模块的 apply 钩子会
+        #   pkg.override { tesseract5 = pkg.tesseract5.override { enableLanguages = null; }; }
+        # 而 null 正是默认值，于是 apply 变成 no-op → tesseract/ocrmypdf/
+        # paperless-ngx 全部命中 cache.nixos.org（代价是多带 ~1.1 GiB tessdata）。
+        # 改成 [ "chi_sim" "eng" ] 能省掉这 1.1 GiB，但那三个包就得本地重建。
+        tesseractLanguages = null;
 
         settings = {
           # 模块会用 domain 生成 https://paperless.lubui.com（没有端口），
           # 但实际入口是 :8443，不覆盖的话邮件、分享链接、OIDC 回调全是错的地址。
           PAPERLESS_URL = lib.mkForce url;
-          # 除了 nginx 转发过来的域名，还允许 127.0.0.1：
-          # paperless-gpt（modules/services/paperless-gpt.nix）在本机直连
-          # 127.0.0.1:28981 走 API，Django 的 Host 校验会把 127.0.0.1:28981 拒掉
-          # （400 DisallowedHost），所以这里要放行本机地址。
+          # 放行 127.0.0.1：paperless-manage / 容器内的健康检查、以及本地 curl
+          # 直连 127.0.0.1:<port> 时 Django 的 Host 校验需要它。
           PAPERLESS_ALLOWED_HOSTS = "paperless.lubui.com,127.0.0.1";
           PAPERLESS_CSRF_TRUSTED_ORIGINS = url;
 
@@ -182,11 +223,39 @@
           PAPERLESS_TRUSTED_PROXIES = "127.0.0.1";
 
           # 中文扫描件是主要场景，顺手保留英文合同/发票。
+          # 插件只认 chi_sim / eng（都走 PP-OCRv6 那个多语模型）。
           PAPERLESS_OCR_LANGUAGE = "chi_sim+eng";
           PAPERLESS_OCR_MODE = "auto";
+          # 插件参数要调的话走 PAPERLESS_OCR_USER_ARGS：paperless 会把它 merge
+          # 进 ocrmypdf.ocr(**args)，键名用 argparse 的 dest（例：
+          #   PAPERLESS_OCR_USER_ARGS = { rapid_det_limit_type = "min";
+          #                              rapid_det_limit_side_len = 736; };
+          # 插件默认已是 small/max/960，一般不用动。
 
-          # 显式关掉 AI
-          PAPERLESS_AI_ENABLED = false;
+          # —— AI（本机 llama.cpp，走 openai-like 协议）——
+          #
+          # 后端是 modules/services/llama.nix 里那个 llama-server（router 模式，
+          # 127.0.0.1:3119）。它不校验 Authorization，所以不需要 API key：
+          # paperless 在没配 key 时会发占位符 "fake"。
+          #
+          # 只用「建议」这条路：PAPERLESS_AI_LLM_EMBEDDING_BACKEND 故意不设，
+          # 所以不建向量索引、没有 RAG 问答。
+          #
+          # 依赖侧现在就靠官方 pkgs.paperless-ngx，AI embedding 那 3.4 GiB
+          # （torch / sentence-transformers）全部来自缓存；以前是 NUR 用空壳包
+          # 裁掉、代价是 paperless-ngx 本地重建。
+          PAPERLESS_AI_ENABLED = true;
+          PAPERLESS_AI_LLM_BACKEND = "openai-like";
+          # 注意带 /v1：llama-index 的 OpenAILike 会把 api_base 后面拼 /chat/completions
+          PAPERLESS_AI_LLM_ENDPOINT = "http://127.0.0.1:3119/v1";
+          # router 模式下 model 就是 llama-models.ini 里的段名；那个 preset
+          # 跟对话用的 Qwen3.5-9B 共用权重，但 temp 0、关 thinking。
+          PAPERLESS_AI_LLM_MODEL = "paperless-classify";
+          # 本机 Vulkan 推理比云端 API 慢（首请求还要加载权重），默认 120s 不够
+          PAPERLESS_AI_LLM_REQUEST_TIMEOUT = 300;
+          # 文档主要是中文，让标题/标签尽量输出中文
+          PAPERLESS_AI_LLM_OUTPUT_LANGUAGE = "Chinese";
+          # 127.0.0.1 默认就允许（PAPERLESS_AI_LLM_ALLOW_INTERNAL_ENDPOINTS 默认 true）
           PAPERLESS_TASK_WORKERS = 2;
           PAPERLESS_THREADS_PER_WORKER = 1;
           PAPERLESS_CONSUMER_RECURSIVE = true;
@@ -197,6 +266,12 @@
           ];
           PAPERLESS_FILENAME_FORMAT = "{created_year}/{correspondent}/{title}";
           PAPERLESS_FILENAME_FORMAT_REMOVE_NONE = true;
+          # 关掉「Check all e-mail accounts」这条 celery beat 任务（默认每 10 分钟
+          # 跑 paperless_mail.tasks.process_mail_accounts）。"disable" 是
+          # paperless/settings/custom.py:parse_beat_schedule() 认的哨兵值，
+          # 等于把该条目从 beat schedule 里删掉，不是改成某个奇怪的 cron。
+          # 想恢复就删掉这行（或写成 "*/10 * * * *"）。
+          PAPERLESS_EMAIL_TASK_CRON = "disable";
         };
       };
 
