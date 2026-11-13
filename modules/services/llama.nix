@@ -24,9 +24,18 @@
         ;     openai-like 路径正是 chat_with_tools(tool_required=True)，
         ;     拿不到 tool_calls 会直接报错。两重关闭：
         ;     chat-template-kwargs 让模板不渲染思考段，reasoning-budget 0 兜底。
+        ;   - parallel 1：llama-server 默认 -np -1（auto，这台机器上开出 4 个 slot）
+        ;     且 kv-unified 默认开启，即 **4 个 slot 共享同一个 8192 token 的 KV 池**。
+        ;     paperless 每个请求的 prompt 上限是文档正文 4000 字符（中文≈3-4k token），
+        ;     两个并发就超 8192，llama-server 直接回 500
+        ;     "Context size has been exceeded."（13:59 那次 4 连传就是这么炸的）。
+        ;     单 slot 让请求排队而不是互相撑爆 KV；吞吐不变（iGPU 的 6.8 t/s 本来就是
+        ;     瓶颈，两个并发只会各自减半）。想真并发就 parallel=2 + ctx-size=16384
+        ;     + kv-unified=true（多约 1.2 GiB KV，这台机器总内存 19 GiB，自己权衡）。
         [paperless-classify]
         hf = unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL
         ctx-size = 8192
+        parallel = 1
         temp = 0
         chat-template-kwargs = {"enable_thinking":false}
         reasoning-budget = 0
