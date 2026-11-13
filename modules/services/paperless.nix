@@ -56,27 +56,14 @@
       };
 
       # paperless 里那些「必须是环境变量、又不能进 nix store」的凭据：
-      #   - OIDC client_secret：明文给 paperless（下面塞进 EnvironmentFile），
-      #     pbkdf2 摘要给 authelia（它的 YAML 只收摘要）。
-      #   - AI（DeepSeek）的 API key：paperless 只认 PAPERLESS_AI_LLM_API_KEY
-      #     这个环境变量，没有 *_FILE 变体。
+      # OIDC client_secret：明文给 paperless（下面塞进 EnvironmentFile，
+      # 不进 nix store），pbkdf2 摘要给 authelia（它的 YAML 只收摘要）。
+      #
+      # AI 后端是本机 llama-server，不校验 Authorization，所以不需要 AI 的 key。
       clan.core.vars.generators.paperless-secrets = {
         files.client-secret = { };
         files.client-secret-hash.secret = false;
         files.env = { };
-        # prompt 已经以文件形式存在 vars 里，不需要再单独部署明文 key
-        files.llm-api-key.deploy = false;
-
-        # 只能人肉提供：不用 type = "hidden"（留空的 hidden prompt 会被 clan
-        # 自动填成随机值，生成出来的 key 无效，只会让每次建议都 401）。
-        prompts.llm-api-key = {
-          type = "line";
-          persist = true;
-          description = ''
-            AI 建议用的 LLM API key：填 DeepSeek 的 key
-            （platform.deepseek.com → API keys）。
-          '';
-        };
 
         runtimeInputs = with pkgs; [
           coreutils
@@ -94,14 +81,9 @@
           # paperless 只接受 JSON 字符串，没有 *_FILE 变体，所以 client_secret 只能
           # 出现在环境变量里。这里写一行紧凑 JSON 当 systemd EnvironmentFile：
           # 值不含空格，systemd 不需要引号，JSON 里的双引号也照原样收下。
-          {
-            cat <<EOF
+          cat > "$out/env" <<EOF
           PAPERLESS_SOCIALACCOUNT_PROVIDERS={"openid_connect":{"SCOPE":["openid","profile","email"],"APPS":[{"provider_id":"${oidcProviderId}","name":"Authelia","client_id":"${oidcClientId}","secret":"$(cat "$out/client-secret")","settings":{"server_url":"${autheliaUrl}","token_auth_method":"client_secret_basic","fetch_userinfo":true}}]}}
           EOF
-            # prompt 文件在同一 generator 里是 $prompts/<name>（type = "line"，
-            # 保证只有一行，不会把 EnvironmentFile 写坏）
-            printf 'PAPERLESS_AI_LLM_API_KEY=%s\n' "$(cat "$prompts/llm-api-key")"
-          } > "$out/env"
         '';
       };
 
@@ -147,8 +129,7 @@
         # systemd 以 root 读出来经 LoadCredential 交给服务，secret 本体不进
         # nix store，也不需要 chown 给 paperless。
         passwordFile = config.clan.core.vars.generators.paperless.files.admin-password.path;
-        # PAPERLESS_SOCIALACCOUNT_PROVIDERS（含 client_secret）和
-        # PAPERLESS_AI_LLM_API_KEY 走这里，不进 nix store。
+        # PAPERLESS_SOCIALACCOUNT_PROVIDERS（含 client_secret）走这里，不进 nix store。
         # 模块会把 environmentFile 同时挂到 4 个 systemd 单元和 paperless-manage。
         environmentFile = gen.files.env.path;
         consumptionDirIsPublic = true;
@@ -206,27 +187,30 @@
           PAPERLESS_OCR_LANGUAGE = "chi_sim+eng";
           PAPERLESS_OCR_MODE = "auto";
 
-          # —— AI（DeepSeek，走 openai-like 协议）——
+          # —— AI（本机 llama.cpp，走 openai-like 协议）——
+          #
+          # 后端是 modules/services/llama.nix 里那个 llama-server（router 模式，
+          # 127.0.0.1:3119）。它不校验 Authorization，所以不需要 API key：
+          # paperless 在没配 key 时会发占位符 "fake"。
           #
           # 只用「建议」这条路：PAPERLESS_AI_LLM_EMBEDDING_BACKEND 故意不设，
-          # 所以不建向量索引、没有 RAG 问答；但 get_taxonomy_context() 在没有
-          # embedding 时会退化成 Tantivy 的 more_like_this 来取候选标签/
-          # 通讯方/文档类型，建议质量仍然靠已有分类法兜底。
+          # 所以不建向量索引、没有 RAG 问答。
           #
           # 依赖侧只保留 llama-index-llms-openai-like（见 nur-packages
           # pkgs/paperless/default.nix 的 stubbedAiDeps），torch / HF embedding
           # 那 3.4 GiB 继续是空壳。
           PAPERLESS_AI_ENABLED = true;
           PAPERLESS_AI_LLM_BACKEND = "openai-like";
-          PAPERLESS_AI_LLM_ENDPOINT = "https://api.deepseek.com";
-          PAPERLESS_AI_LLM_MODEL = "deepseek-flash";
+          # 注意带 /v1：llama-index 的 OpenAILike 会把 api_base 后面拼 /chat/completions
+          PAPERLESS_AI_LLM_ENDPOINT = "http://127.0.0.1:3119/v1";
+          # router 模式下 model 就是 llama-models.ini 里的段名；那个 preset
+          # 跟对话用的 Qwen3.5-9B 共用权重，但 temp 0、关 thinking。
+          PAPERLESS_AI_LLM_MODEL = "paperless-classify";
+          # 本机 Vulkan 推理比云端 API 慢（首请求还要加载权重），默认 120s 不够
+          PAPERLESS_AI_LLM_REQUEST_TIMEOUT = 300;
           # 文档主要是中文，让标题/标签尽量输出中文
           PAPERLESS_AI_LLM_OUTPUT_LANGUAGE = "Chinese";
-          # 不开 thinking：deepseek-flash 默认开思考，而 thinking 模式会拒绝
-          # paperless 发的强制 tool_choice。3.1.x 没有
-          # PAPERLESS_AI_LLM_EXTRA_PARAMS 这个口子（3.3.0 才加），所以这一项是
-          # 在 nur-packages/pkgs/paperless/default.nix 里用 postPatch 把
-          # additional_kwargs 直接塞给 OpenAILike 的。
+          # 127.0.0.1 默认就允许（PAPERLESS_AI_LLM_ALLOW_INTERNAL_ENDPOINTS 默认 true）
           PAPERLESS_TASK_WORKERS = 2;
           PAPERLESS_THREADS_PER_WORKER = 1;
           PAPERLESS_CONSUMER_RECURSIVE = true;

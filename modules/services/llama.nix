@@ -15,16 +15,21 @@
         ; preset 和 LLAMA_CACHE 里已下载的同一个模型文件只显示一条（否则 /models 会重复）
         dedup-cache-models = 1
 
-        ; Qwen3.5-9B：多模态（mmproj 随 hf 自动下载），默认 thinking 模式，
-        ; 采样参数取官方 thinking 推荐值。权重 5.56 GiB + mmproj 0.86 GiB，KV 另算。
-        [Qwen3.5-9B]
+        ; paperless 的 AI 建议（modules/services/paperless.nix）专用：同一份
+        ; Qwen3.5-9B 权重，但要与对话场景不同的参数：
+        ;   - temp 0：分类要确定性
+        ;   - ctx 8192：paperless 的 PAPERLESS_AI_LLM_CONTEXT_SIZE 默认就是 8192
+        ;   - 关 thinking：分类不需要思考，而且 thinking 模板下 llama.cpp 不保证
+        ;     强制执行 tool_choice=required（upstream #27217），而 paperless 的
+        ;     openai-like 路径正是 chat_with_tools(tool_required=True)，
+        ;     拿不到 tool_calls 会直接报错。两重关闭：
+        ;     chat-template-kwargs 让模板不渲染思考段，reasoning-budget 0 兜底。
+        [paperless-classify]
         hf = unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL
-        ctx-size = 16384
-        temp = 1.0
-        top-p = 0.95
-        top-k = 20
-        repeat-penalty = 1.0
-        presence-penalty = 1.5
+        ctx-size = 8192
+        temp = 0
+        chat-template-kwargs = {"enable_thinking":false}
+        reasoning-budget = 0
 
         ; PaddleOCR-VL-1.6：0.9B 文档解析 VLM（NaViT 视觉塔 + ERNIE-4.5-0.3B），
         ; 权重 892 MiB + mmproj 841 MiB（官方仓库只有 F16），mmproj 随 hf 自动下载。
