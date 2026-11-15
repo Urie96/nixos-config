@@ -76,6 +76,39 @@
           doCheck = true;
           pythonImportsCheck = [ "ocrmypdf_rapidocr" ];
         };
+
+      # —— 消费前的图片清洗：Ultra HDR / MPO JPEG ——
+      #
+      # 手机相册（OPPO/OnePlus 等）导出的 Ultra HDR JPEG 是 MPO 容器：主图后面再
+      # 追加一张灰度 gain map（通常是 1/4 尺寸），由 APP2 里的 MPF 索引。
+      #
+      # 图片类型的文档 paperless 会丢给 ocrmypdf，而 ocrmypdf 的
+      # _pipeline.triage_image_file() 用 img2pdf.convert() 把图片包成 PDF；
+      # img2pdf 会把 n_frames > 1 的图片**每一帧排成一页**。于是单张扫描件变成
+      # 2 页 PDF（第 1 页主图、第 2 页 gain map），OCR 也跟着做两遍，正文和搜索
+      # 结果都是双份。Pillow 只打一条 “malformed MPO file” 警告，不会拦下来。
+      #
+      # 修法是在消费前把追加图像和 MPF 索引删掉。exiftool 这一步不重编码 JPEG
+      # 数据，主图像素与原文件完全一致（实测 3.1MB → 2.9MB，解码后哈希相同）。
+      # 脚本改的是 working copy，paperless 之后写 originals/archive 用的也是它。
+      #
+      # 没有 MPF 的普通 JPEG 走同一条命令只会输出 “1 image files unchanged”。
+      preConsumeScript = pkgs.writeShellApplication {
+        name = "paperless-pre-consume";
+        runtimeInputs = [ pkgs.exiftool ];
+        text = ''
+          file="''${DOCUMENT_WORKING_PATH:?DOCUMENT_WORKING_PATH is not set}"
+          case "''${file,,}" in
+            *.jpg | *.jpeg | *.jpe) ;;
+            *) exit 0 ;;
+          esac
+          # 失败不拦文档：最坏情况只是回到「一张图两页」的老行为，而真正的解析
+          # 错误留给后面的 OCR 去报。stderr 会被 run_subprocess 写进任务日志。
+          if ! exiftool -overwrite_original -trailer:all= -MPF:all= "$file" >/dev/null; then
+            echo "warning: failed to strip MPF trailers from $file (continuing)" >&2
+          fi
+        '';
+      };
     in
     {
       clan.core.vars.generators.paperless = {
@@ -272,6 +305,10 @@
           # 等于把该条目从 beat schedule 里删掉，不是改成某个奇怪的 cron。
           # 想恢复就删掉这行（或写成 "*/10 * * * *"）。
           PAPERLESS_EMAIL_TASK_CRON = "disable";
+
+          # Ultra HDR / MPO JPEG 的追加图像（gain map）会让单张图变成 2 页 PDF，
+          # 详见上面 preConsumeScript 的注释。
+          PAPERLESS_PRE_CONSUME_SCRIPT = lib.getExe preConsumeScript;
         };
       };
 

@@ -9,6 +9,7 @@
     {
       config,
       inputs',
+      lib,
       pkgs,
       ...
     }:
@@ -30,6 +31,11 @@
       ]);
 
       clan.core.networking.targetHost = "root@192.168.2.2";
+
+      # 关掉 kitty 的自定义 shader：custom_shaders 置空后 kitty 不加载任何
+      # pipeline（cursor-trail-bubbles 每帧都要多跑一遍全屏 shader）。
+      # wrapper 里的默认值是普通定义，这里必须用 mkForce 才能覆盖。
+      wrappers.kitty.settings.custom_shaders = lib.mkForce "";
 
       homebrew.casks = [
         "calibre"
