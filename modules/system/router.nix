@@ -62,9 +62,9 @@
         firewall = {
           trustedInterfaces = [
             lan.interface
-            "tun0"
+            # 不再有 "tun0"：网关的透明代理从 sing-box TUN 换成了 dae（eBPF，
+            # 没有 tun 设备），见 modules/services/dae/default.nix。
           ];
-          extraReversePathFilterRules = "iifname tun0 accept";
           interfaces.${wan.interface}.allowedTCPPorts = [
             22
             18443

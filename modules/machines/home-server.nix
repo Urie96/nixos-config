@@ -19,6 +19,10 @@
         special-day-notify
         router
         singbox-home
+        # dae 接管了 singbox-home 原来的全局网关职责（eBPF 透明代理），
+        # dnsmasq 给 dae 提供本地 DNS 记录（.lan / *.lubui.com）。
+        dae-home
+        dnsmasq-local
         # 这台机器也是构建机（x86 leg 的 runner），构建的包也在构建时签名
         nix-signing
         # gitea-runner-home

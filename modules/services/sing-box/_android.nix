@@ -10,11 +10,17 @@
 # 之后配置更新由 SFA 轮询；App 里也可以直接添加 Remote profile 填上面的 URL。
 {
   config,
+  inputs',
   pkgs,
   utils,
   ...
 }:
 let
+  # 不再通过 services.sing-box.package 取包：home-server 上 services.sing-box
+  # 已经关掉（网关换成了 dae），但订阅要渲染/校验的 profile 仍然是这个
+  # alpha 版本的 sing-box，跟手机上 SFA 的行为对齐。
+  sing-box = inputs'.nur-packages.packages.sing-box;
+
   sing-box-hk = config.clan.core.vars.generators.sing-box-hk.files;
   sing-box-kr = config.clan.core.vars.generators.sing-box-kr.files;
   sing-box-kr-reality = config.clan.core.vars.generators.sing-box-kr-reality.files;
@@ -184,7 +190,7 @@ in
 
       rm -f "$tmp"
       ${render}
-      ${config.services.sing-box.package}/bin/sing-box check -c "$tmp"
+      ${sing-box}/bin/sing-box check -c "$tmp"
       install -o ${config.services.nginx.user} -g ${config.services.nginx.group} -m 0400 "$tmp" "$configDir/config.json"
       rm -f "$tmp"
 
@@ -192,6 +198,14 @@ in
       find /var/lib/nginx/singbox-subscription/android -mindepth 1 -maxdepth 1 -type d \
         ! -name "$token" -exec rm -rf {} +
     '';
+  };
+
+  # 这个 vhost 原来由 _home.nix 定义（带 yacd 面板和 clash_api）。面板已经
+  # 随 _home.nix 停用，这里自己声明 vhost 的 TLS 部分，否则这个 host 会
+  # 变成没有证书的 profile 站点。
+  services.nginx.virtualHosts."singbox.lubui.com" = {
+    addSSL = true;
+    useACMEHost = "lubui.com";
   };
 
   services.nginx.virtualHosts."singbox.lubui.com".locations."/android/" = {
