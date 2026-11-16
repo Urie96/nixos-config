@@ -161,7 +161,7 @@
           imports = [
             (v.install {
               _class = "nixos";
-              inherit pkgs;
+              specialArgs = { inherit pkgs; };
             })
           ];
         }
@@ -184,7 +184,7 @@
           imports = [
             (v.install {
               _class = "nixOnDroid";
-              inherit pkgs;
+              specialArgs = { inherit pkgs; };
             })
           ];
           environment.packages = lib.mkIf config.wrappers.${name}.enable [
