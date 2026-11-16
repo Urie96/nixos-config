@@ -42,6 +42,15 @@ let
     "xfs"
     "btrfs"
     "dm_mod"
+    # btrfs 的校验和在挂载时通过 crypto API 动态 request_module("crypto-crc32c")
+    # 加载，不是 .ko 的 depends，所以 `modprobe --show-depends btrfs` 抓不到它。
+    # 漏掉会让 mount btrfs 失败：
+    #   BTRFS error (device vda3): error allocating crc32c hash for checksum
+    #   BTRFS error (device vda3): open_ctree failed: -2   ← -ENOENT
+    # mount(8) 最终报 `fsconfig() failed: No such file or directory`。
+    # （xxhash / sha256 在这个内核里是 builtin，只有 blake2b 是模块。）
+    "crc32c"
+    "blake2b-512"
     # /etc overlay 需要（nixpkgs 26.11 用 erofs 挂 /etc-metadata-image）
     "erofs"
     "autofs4"
