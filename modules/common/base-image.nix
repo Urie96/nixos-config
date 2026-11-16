@@ -1,3 +1,4 @@
+{ self, ... }:
 {
   flake.nixosModules.base-image =
     {
@@ -7,6 +8,10 @@
       ...
     }:
     {
+      imports = with self.nixosModules; [
+        minimal
+      ];
+
       environment.systemPackages = with pkgs; [
         parted
         gitMinimal
