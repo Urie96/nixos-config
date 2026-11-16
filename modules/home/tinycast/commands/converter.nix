@@ -108,7 +108,10 @@
         }
         {
           name = "Translate";
-          runtimeInputs = [ nur.translate ];
+          runtimeInputs = [
+            nur.translate
+            pkgs.rbw
+          ];
           arguments = [ (opt "Text") ];
           showsOutput = true;
           text = ''
