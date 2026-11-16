@@ -1,7 +1,7 @@
 # ---
 # schema = "ext4-single-disk"
 # [placeholders]
-# mainDisk = "/dev/disk/by-id/virtio-2zeiakw30pazncd0iuzl" 
+# mainDisk = "/dev/disk/by-id/virtio-2zeiakw30pazncd0iuzl"
 # ---
 # This file was automatically generated!
 # CHANGING this configuration requires wiping and reinstalling the machine
@@ -38,9 +38,13 @@
             root = {
               size = "100%";
               content = {
-                type = "filesystem";
-                format = "ext4";
+                type = "btrfs";
+                extraArgs = [ "-f" ]; # Override existing partition
                 mountpoint = "/";
+                mountOptions = [
+                  "compress=zstd"
+                  "noatime"
+                ];
               };
             };
           };
