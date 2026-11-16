@@ -24,7 +24,10 @@ let
           echo -n ${remote_ip} > $out/remote_ip
           echo -n ${remote_domain} > $out/remote_domain
 
-          python3 -c "import uuid; print(uuid.uuid4())" > $out/uuid
+          # sys.stdout.write 而不是 print：值后面不能带换行。
+          # uuid 会被直接插进分享链接（dae 的 node 链接、sing-box 的 _secret），
+          # 带 \n 的话 url 解析会报 invalid control character。
+          python3 -c "import sys, uuid; sys.stdout.write(str(uuid.uuid4()))" > $out/uuid
 
           openssl req -x509 -newkey rsa:2048 -nodes \
             -keyout $out/key \
@@ -127,17 +130,36 @@ let
 in
 
 {
+  # home-server 不再跑 sing-box 客户端：全局网关那部分（tun-in + TUN 分流 +
+  # clash_api）已经换成 dae，见 modules/services/dae/default.nix。
+  # 这里只保留：
+  #   * 上面那些 generator（Android 订阅和 dae 都要读同一份 vars）；
+  #   * _android.nix —— 生成 sing-box for Android 的订阅配置并由 nginx 提供；
+  #   * 服务端（singbox-kr / singbox-hk）不受影响，仍在各自 VPS 上跑。
+  # 回滚：把 ./_home.nix 加回 imports，并在 home-server 上停用 dae-home。
   flake.nixosModules.singbox-home = {
     imports = [
       singbox-hk-var
       singbox-kr-var
-      # 客户端要读 public_key / short_id / handshake_domain，所以同一份 generator
-      # 也要在这里声明（share = true，值来自 clan 共享的 vars）
+      # dae（和 Android 订阅）要读 public_key / short_id / handshake_domain，
+      # 所以同一份 generator 也要在这里声明（share = true，值来自 clan 共享的 vars）
       singbox-kr-reality-var
       singbox-kr-hysteria2-var
-      ./_home.nix
+      # ./_home.nix
       ./_android.nix
     ];
+
+    # 虽然 home-server 上 services.sing-box 已经关了，但上面这些 generator
+    # 的 secret 文件 owner 仍然是 sing-box（share = true，两台 VPS 上的
+    # sing-box 服务要读同一批文件）。sops-install-secrets 会用 user.Lookup
+    # 校验 owner，用户不存在会让激活直接失败，所以这个用户得留着。
+    # 属性与 nixpkgs sing-box 模块里的定义保持一致，回滚重开服务时不会冲突。
+    users.users.sing-box = {
+      isSystemUser = true;
+      group = "sing-box";
+      home = "/var/lib/sing-box";
+    };
+    users.groups.sing-box = { };
   };
 
   flake.nixosModules.singbox-kr = {

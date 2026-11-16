@@ -18,7 +18,6 @@
         ; paperless 的 AI 建议（modules/services/paperless.nix）专用：同一份
         ; Qwen3.5-9B 权重，但要与对话场景不同的参数：
         ;   - temp 0：分类要确定性
-        ;   - ctx 8192：paperless 的 PAPERLESS_AI_LLM_CONTEXT_SIZE 默认就是 8192
         ;   - 关 thinking：分类不需要思考，而且 thinking 模板下 llama.cpp 不保证
         ;     强制执行 tool_choice=required（upstream #27217），而 paperless 的
         ;     openai-like 路径正是 chat_with_tools(tool_required=True)，
@@ -34,7 +33,7 @@
         ;     + kv-unified=true（多约 1.2 GiB KV，这台机器总内存 19 GiB，自己权衡）。
         [paperless-classify]
         hf = unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL
-        ctx-size = 8192
+        ctx-size = 16384
         parallel = 1
         temp = 0
         chat-template-kwargs = {"enable_thinking":false}

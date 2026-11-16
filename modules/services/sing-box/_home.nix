@@ -1,3 +1,10 @@
+# 【已停用】home-server 的 sing-box 客户端配置（TUN 网关 + clash_api + yacd）。
+# 现在由 modules/services/dae/default.nix 里的 dae 接替：
+#   * tun-in / auto_route / auto_redirect / strict_route
+#   * DNS 的 predefined 本地记录（搬到了 modules/services/dnsmasq.nix）
+#   * clash_api + nginx + yacd 面板（不再提供）
+# 这个文件保留下来当回滚参考：把它加回 default.nix 里 singbox-home 的 imports，
+# 同时从 home-server 去掉 dae-home / dnsmasq-local 即可。
 {
   config,
   lib,
