@@ -5,11 +5,16 @@
 
   clan.machines.ali-cloud-1 = {
     imports = with self.nixosModules; [
-      common
+      base
       server
     ];
 
-    clan.core.deployment.requireExplicitUpdate = true;
+    nix.settings.substituters = lib.mkForce [
+      "https://mirrors.ustc.edu.cn/nix-channels/store?priority=1"
+      "https://cache.numtide.com?priority=2"
+      "https://cache.lubui.com:8443?priority=3"
+      "https://cache.nixos.org/"
+    ];
 
     my.mainUser.name = "urie";
 
@@ -19,19 +24,10 @@
       443
     ];
 
-    programs.mosh.enable = lib.mkForce false;
-
     nix.gc = {
       automatic = true;
       dates = "weekly";
       options = "--delete-older-than 10d";
-    };
-
-    boot.kernel.sysctl = {
-      # OOPS 后自动重启，等人工救援太慢
-      "kernel.panic" = 10;
-      # 配合 common 里已开的 zramSwap（NixOS 不调 swappiness，默认还是 60）
-      "vm.swappiness" = 120;
     };
   };
 }

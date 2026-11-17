@@ -77,7 +77,7 @@ let
 
   singbox-kr-var = make-singbox-var {
     remote_domain = "kr.lubui.buzz";
-    remote_ip = "43.133.236.247";
+    remote_ip = "43.166.24.118";
     name = "sing-box-kr";
   };
   singbox-kr-config = import ./_make-oversea.nix "sing-box-kr";

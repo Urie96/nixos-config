@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 在本地 QEMU 里开机验证一个 kexec tarball（不需要真的重启远端机器）。
 #
-#   ./kexec-image/test-qemu.sh $(nix build .#kexec-image-minimal --print-out-paths)/nixos-kexec-minimal-x86_64-linux.tar.gz
+#   ./modules/apps/kexec-image/test-qemu.sh $(nix build .#kexec-image-minimal --print-out-paths)/nixos-kexec-minimal-x86_64-linux.tar.gz
 #
 # 做的事：解包 → 用 ~/.ssh/*.pub 做一份 authorized_keys 追加进 initrd（等价于
 # kexec/run 在旧系统上做的事）→ 起 QEMU（KVM，hostfwd 到 2222）→ 等 ssh →

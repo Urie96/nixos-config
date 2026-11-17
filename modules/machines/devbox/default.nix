@@ -40,6 +40,13 @@
               {
                 my.mainUser.name = username;
 
+                nix.settings.substituters = lib.mkForce [
+                  "https://mirrors.ustc.edu.cn/nix-channels/store?priority=1"
+                  "https://cache.numtide.com?priority=2"
+                  "https://cache.lubui.com:8443?priority=3"
+                  "https://cache.nixos.org/"
+                ];
+
                 # 拉取式自动部署（没有公网 IP，nixbot 推不进来）：定时拉
                 # cache.lubui.com 上的 desired-state 清单，和当前
                 # /nix/var/nix/gcroots/system-manager-current 比较，不一致就拉闭包

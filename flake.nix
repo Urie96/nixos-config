@@ -1,16 +1,9 @@
 {
   description = "NixOS configuration with flakes";
 
-  nixConfig.extra-substituters = [
-    "https://cache.lubui.com:8443"
-    "https://mirrors.ustc.edu.cn/nix-channels/store"
-    "https://cache.numtide.com"
-    "https://urie96.cachix.org"
-  ];
+  nixConfig.extra-substituters = [ "https://cache.lubui.com:8443" ];
   nixConfig.extra-trusted-public-keys = [
     "cache.lubui.com-2:tfGYA7ZOj7ubsmDDpe4q5n4jl58lsbtOa0N5QMHt1dY="
-    "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-    "urie96.cachix.org-1:HvBaYVt8jaNXuLS1nLmaT0z6kD/sqWCFwSYdvd5Xwnk="
   ];
 
   inputs = {
