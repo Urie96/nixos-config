@@ -89,9 +89,9 @@ in
 
     nix = {
       substituters = [
-        "https://cache.lubui.com:8443"
-        "https://mirrors.ustc.edu.cn/nix-channels/store"
-        "https://cache.numtide.com"
+        "https://cache.lubui.com:8443?priority=10"
+        "https://mirrors.ustc.edu.cn/nix-channels/store?priority=20"
+        "https://cache.numtide.com?priority=30"
       ];
       trustedPublicKeys = [
         "cache.lubui.com-1:sOTVoQUdzu6FAIBD8bqWVWtMRdkr3LSHRMpw4ggKVFA="

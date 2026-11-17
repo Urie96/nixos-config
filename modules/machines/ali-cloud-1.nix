@@ -10,6 +10,13 @@
       base
     ];
 
+    nix.settings.substituters = lib.mkForce [
+      "https://mirrors.ustc.edu.cn/nix-channels/store?priority=1"
+      "https://cache.numtide.com?priority=2"
+      "https://cache.lubui.com:8443?priority=3"
+      "https://cache.nixos.org/"
+    ];
+
     my.mainUser.name = "urie";
 
     networking.firewall.allowedTCPPorts = [
