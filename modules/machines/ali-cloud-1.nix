@@ -5,9 +5,8 @@
 
   clan.machines.ali-cloud-1 = {
     imports = with self.nixosModules; [
-      common
-      server
       base
+      server
     ];
 
     nix.settings.substituters = lib.mkForce [
