@@ -47,10 +47,10 @@
           enable = true;
           ruleset = ''
             table ip nat {
-              # 端口映射: 18443 -> 43.133.236.247:8443
+              # 端口映射: 18443 -> 43.166.24.118:8443
               chain prerouting {
                 type nat hook prerouting priority dstnat; policy accept;
-                tcp dport 18443 dnat to 43.133.236.247:8443
+                tcp dport 18443 dnat to 43.166.24.118:8443
               }
               chain postrouting {
                 type nat hook postrouting priority 100
