@@ -51,16 +51,20 @@ swap 只能换出匿名页，回收 page cache 得到的也只是 movable 页，
 
 | 文件 | 说明 |
 | --- | --- |
-| `base.nix` | 两个变体共用的 NixOS 配置：netboot + perlless + 一堆体积裁剪 + 模块树裁剪 + sshd/密钥恢复 |
-| `minimal.nix` | `imports = [ ./base.nix ]`，不带 nix（探测硬件用） |
-| `full.nix` | `imports = [ ./base.nix ]` + `kexecImage.installerSupport = true`（装机用） |
-| `builder.nix` | 把上面任一变体打包成 kexec tarball（`lib.nixosSystem` → netbootRamdisk + kernel + 静态 kexec/ip + run 脚本） |
+| `_base.nix` | 两个变体共用的 NixOS 配置：netboot + perlless + 一堆体积裁剪 + 模块树裁剪 + sshd/密钥恢复 |
+| `_minimal.nix` | `imports = [ ./_base.nix ]`，不带 nix（探测硬件用） |
+| `_full.nix` | `imports = [ ./_base.nix ]` + `kexecImage.installerSupport = true`（装机用） |
+| `_builder.nix` | 把上面任一变体打包成 kexec tarball（`lib.nixosSystem` → netbootRamdisk + kernel + 静态 kexec/ip + run 脚本） |
 | `kexec-run.sh` | 在**旧系统**上跑的脚本（取自 nixos-images）：收集 ssh 公钥/主机密钥/`ip addr`，追加进 initrd，然后 `kexec --load` + `kexec -e` |
 | `test-qemu.sh` | 本地 QEMU 开机自检，不需要真重启远端机器 |
 | `replace-installer.sh` | 把一台已经在 installer 里的机器 kexec 到另一个 tarball（见下面「两跳装机」） |
 
-flake 输出在 [`../modules/apps/kexec-image.nix`](../modules/apps/kexec-image.nix)，
+flake 输出在 [`./kexec-image.nix`](./kexec-image.nix)，
 只对 `x86_64-linux` 暴露 `packages.kexec-image-{minimal,full}`。
+
+`_` 前缀是给 `import-tree ./modules` 看的：带下划线的文件不会被当成 flake-parts 模块
+导入（这里的 `_base/_minimal/_full/_builder` 是 NixOS 模块和打包函数，不是 flake 模块），
+和 `modules/apps/cloud-vm-image/` 的约定一致。
 
 ## 用法
 
@@ -99,7 +103,7 @@ clan machines init-hardware-config ali-cloud-1 --target-host root@<ip> \
 # （这条命令最后会因为 minimal 里没有 nix 而 exit 127，facter.json 已经生成，无所谓）
 
 # 第 2 跳：minimal installer → full installer（此时内存正常，208MB 无压力）
-./kexec-image/replace-installer.sh root@<ip> \
+./modules/apps/kexec-image/replace-installer.sh root@<ip> \
   "$(nix build .#kexec-image-full --print-out-paths)/nixos-kexec-full-x86_64-linux.tar.gz"
 
 # 现在目标机就是带 nix 的 installer 了，clan 会跳过 kexec 直接 disko + install
@@ -118,7 +122,7 @@ clan machines install ali-cloud-1
 改完镜像先本地开机验一遍，别直接拿去重启生产机器：
 
 ```bash
-./kexec-image/test-qemu.sh "$(nix build .#kexec-image-minimal --print-out-paths)/nixos-kexec-minimal-x86_64-linux.tar.gz"
+./modules/apps/kexec-image/test-qemu.sh "$(nix build .#kexec-image-minimal --print-out-paths)/nixos-kexec-minimal-x86_64-linux.tar.gz"
 ```
 
 脚本会：用 `~/.ssh/id_ed25519.pub` 造一份 `authorized_keys` 追加进 initrd（等价于 `kexec/run`
@@ -157,7 +161,7 @@ ssh -p 2222 root@127.0.0.1 sh -s < \
 5. **`openssh.settings.SetEnv = "PATH=…/sw/bin"`**：非交互 ssh 会话默认 PATH 里没有
    `/run/current-system/sw/bin`，nixos-anywhere 的 `command -v nixos-facter` 会失败，转而去目标机
    `nix shell nixpkgs#nixos-facter`（国内很慢）。加上之后就 `hasNixOSFacter=y` 了。
-6. **体积裁剪清单**（都在 `base.nix` 里，带注释）：不塞 nixpkgs 副本（`system.installer.channel.enable`
+6. **体积裁剪清单**（都在 `_base.nix` 里，带注释）：不塞 nixpkgs 副本（`system.installer.channel.enable`
    / `nix.registry`，−234MB）、`system.disableInstallerTools`（−python3 144MB）、关 zfs、`profiles/perlless.nix`
    （−perl 58MB）、`environment.defaultPackages`、`dbus.implementation = "broker"`、`ldso32 = null`。
    minimal 还额外关掉 `nix` 本体（−boost/icu/glib ≈100MB）。

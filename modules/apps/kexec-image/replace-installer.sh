@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 把一台**已经在 Linux / NixOS installer 里**的机器 kexec 到另一个 kexec tarball。
 #
-#   ./kexec-image/replace-installer.sh root@1.2.3.4 \
+#   ./modules/apps/kexec-image/replace-installer.sh root@1.2.3.4 \
 #     "$(nix build .#kexec-image-full --print-out-paths)/nixos-kexec-full-x86_64-linux.tar.gz"
 #
 # 为什么需要它：`clan machines install/init-hardware-config` 在目标机已经是 installer

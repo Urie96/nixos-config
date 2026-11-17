@@ -13,7 +13,7 @@
     let
       mkImage =
         name: image:
-        import ../../kexec-image/builder.nix {
+        import ./_builder.nix {
           inherit (self.inputs.nixpkgs) lib;
           inherit system name image;
         };
@@ -22,8 +22,8 @@
       # 只对 x86_64-linux 暴露：kexec installer 的用途就是给云主机装 NixOS，
       # 而且 aarch64 上构建要模拟，没必要默认挂进 flake 输出。
       packages = lib.optionalAttrs (system == "x86_64-linux") {
-        kexec-image-minimal = mkImage "minimal" ../../kexec-image/minimal.nix;
-        kexec-image-full = mkImage "full" ../../kexec-image/full.nix;
+        kexec-image-minimal = mkImage "minimal" ./_minimal.nix;
+        kexec-image-full = mkImage "full" ./_full.nix;
       };
     };
 }
