@@ -5,9 +5,9 @@
 
   clan.machines.ali-cloud-1 = {
     imports = with self.nixosModules; [
-      minimal
       common
       server
+      base
     ];
 
     my.mainUser.name = "urie";
