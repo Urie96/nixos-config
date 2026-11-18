@@ -70,6 +70,17 @@
         ];
       };
 
+      # 挂载点本身必须归 root：aria2 / tgdl 的下载目录建在它下面（/mnt/hdd/downloads/*），
+      # 由 systemd-tmpfiles 以 root 创建并 chown 给服务用户。systemd-tmpfiles 带
+      # CHASE_SAFE 检查，遇到「父目录属于非 root 用户 → 子目录属于 root」会直接拒绝
+      # （journal 里是 `Detected unsafe path transition /mnt/hdd (owned by urie) → …`，
+      # 结果目录建不出来，tgdl 起服务时报 226/NAMESPACE）。这个 owner 存在盘上，
+      # 重新插拔也不会变，用 mkBefore 保证排在生成目录的规则前面。
+      # 盘里的现有数据（switch_games 等）不动；urie 在挂载点顶层新建目录要 sudo。
+      systemd.tmpfiles.rules = lib.mkBefore [
+        "d /mnt/hdd 0755 root root - -"
+      ];
+
       # Use the systemd-boot EFI boot loader.
       boot.loader.systemd-boot.enable = true;
       boot.loader.efi.canTouchEfiVariables = true;

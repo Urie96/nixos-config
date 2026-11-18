@@ -12,7 +12,11 @@
 
       user = "tgdl";
       stateDir = "/var/lib/tgdl";
-      downloadDir = "${stateDir}/downloads";
+
+      # 下载目录和状态分开：session.json / state.db 留在 /var/lib/tgdl（@varlib
+      # 会被 btrbk 备份，小文件留着无妨）；下载的视频放外挂机械盘（subvol @data，
+      # 不进任何快照），别把 @varlib 的快照/备份撑爆。
+      downloadDir = "/mnt/hdd/downloads/tgdl";
 
       # 配置里不再放任何凭据：api_id / api_hash 走 systemd 的 EnvironmentFile
       # （TGDL_API_ID / TGDL_API_HASH，见 modules/services/tgdl.nix 里的 vars
@@ -22,12 +26,12 @@
         state_file = "${stateDir}/state.db";
         download_dir = downloadDir;
 
-        poll_interval = "10m";
+        poll_interval = "1h";
         threads = 4;
         retries = 5;
         log_level = "info";
         redownload_missing_files = false;
-        backfill = true;
+        backfill = false;
 
         filters = {
           max_file_size = 0;
@@ -41,11 +45,6 @@
           {
             channel = "-1003331047977";
             dir = "资源下载器";
-            backfill = true;
-          }
-          {
-            channel = "-5075548374";
-            dir = "资源下载器-群";
             backfill = true;
           }
         ];
@@ -118,10 +117,12 @@
           # unit 会直接起不来并报 Failed to load environment files。
           EnvironmentFile = envFile;
 
-          # /var/lib/tgdl（session.json、state.db、downloads/）由 systemd 建好
-          # 并 chown 给 tgdl，也是 ProtectSystem=strict 下唯一可写的地方。
+          # /var/lib/tgdl（session.json、state.db）由 systemd 建好并 chown 给 tgdl。
+          # 下载目录在外挂盘上，StateDirectory 管不到，由下面的 tmpfiles 建、
+          # ReadWritePaths 单独放行。
           StateDirectory = "tgdl";
           WorkingDirectory = stateDir;
+          ReadWritePaths = [ downloadDir ];
 
           # session 还没登录时 tgdl 以 1 退出；RestartSec 别太短，免得刷日志。
           Restart = "on-failure";
@@ -153,7 +154,19 @@
           SystemCallFilter = [ "@system-service" ];
           SystemCallErrorNumber = "EPERM";
         };
+
+        # 下载目录在外挂盘上：ProtectSystem=strict 下要显式放行（见 ReadWritePaths），
+        # 目录得先建好并 chown 给 tgdl（StateDirectory 只管 /var/lib/tgdl）。
+        # /mnt/hdd 是 nofail 挂的，没插盘时这里只是一个空挂载点，靠下面的
+        # RequiresMountsFor 让服务起不来，而不是把下载写进根分区。
+        unitConfig.RequiresMountsFor = [ downloadDir ];
       };
+
+      # 下载目录全局可读：jellyfin / samba / 主用户都要直接读下载的视频，
+      # 不靠加组。tgdl 新建的子目录/文件走默认 umask 0022，也是 0755/0644。
+      systemd.tmpfiles.rules = [
+        "d ${downloadDir} 0755 ${user} ${user} - -"
+      ];
 
       # 首次登录（要在 TTY 里收 Telegram 验证码），登录态写进
       # /var/lib/tgdl/session.json，之后服务才有权限跑。
