@@ -39,7 +39,7 @@
       # systemd 服务 / podman 容器 / nginx vhost 在不在：模块没被 import 时为
       # false，效果和 enable 一样。
       #
-      # 另有几个条目是不在本仓库托管的外部服务（gotify、aria2、WLED 等，跑在
+      # 另有几个条目是不在本仓库托管的外部服务（gotify、WLED 等，跑在
       # 别的设备上），nix 无从判断，条目恒定存在。
       always = entry: [ entry ];
     in
@@ -136,6 +136,14 @@
                   icon = "https://doc.oplist.org/favicon.svg";
                   title = "OpenList";
                   url = "https://openlist.lubui.com:8443";
+                })
+                (ifEnabled config.services.aria2.enable {
+                  description = "下载器（AriaNg）";
+                  icon = "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/ariang.png";
+                  title = "Aria2";
+                  # 带 secret 的 302 跳转（见 modules/services/aria2.nix）：第一次打开就把
+                  # RPC 设置写进浏览器，之后照常访问根路径也行。
+                  url = "https://aria.lubui.com:8443/rpc-set";
                 })
 
                 # —— 阅读与笔记 ——

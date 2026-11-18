@@ -15,6 +15,7 @@
       gitea
       podman
       openlist
+      aria2
       samba
       acme
       radicale
@@ -50,6 +51,7 @@
       calibre
       kosync
       ownfoil
+      tgdl
       xiaozhi-server-rs
       # pi-server
     ];
