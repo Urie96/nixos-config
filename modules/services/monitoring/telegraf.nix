@@ -100,6 +100,13 @@
             # 既浪费又容易被注册商限流。到期日一年才变一次，6h 完全够。
             # 代价是 telegraf 重启后最多 6h 才出现第一个采样点（见上面注意事项），
             # 所以 vmalert 里“采集缺失”那条用的是 24h 窗口而不是 15m。
+            #
+            # 插件查 whois.iana.org，而 Go 的拨号器优先用 AAAA。2026-11 换成 dae
+            # 之后境外 IPv6 过代理是死的（代理端没有 v6 出口），TCP 握手能成但
+            # 回 0 字节，于是报 “whois parsing failed: whoisparser: domain whois
+            # data is invalid” —— 看着像解析问题，其实是网络。修法见
+            # modules/services/dae/default.nix 里 routing 的 dip('::/0') 规则；
+            # 排查时对比 nc -4 / nc -6 whois.iana.org 43 就能看出来。
             whois = [
               {
                 domains = [ "lubui.com" ];

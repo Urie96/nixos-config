@@ -100,7 +100,13 @@
         }
 
         dns {
-            # 对应原 sing-box 的 dns.strategy: ipv4_only
+            # 对应原 sing-box 的 dns.strategy: ipv4_only，但**不等价**，别指望它
+            # 兜住 IPv6：dae 只在“已经知道这个域名有 A 记录”时才把 AAAA 应答换成
+            # 空的 NOERROR —— 条件是缓存里有未过期的 A，或者 AAAA 查询等待 50ms
+            # 内收到了带记录的 A。这里的境外 DNS 走 tls://8.8.8.8:853 过代理，
+            # RTT 上百毫秒，50ms 窗口根本等不到 A，AAAA 照旧原样返回（实测
+            # dig AAAA whois.iana.org 仍有记录），本地进程还是会优先用 IPv6。
+            # IPv6 的问题在下面 routing 的 dip('::/0') 规则里处理。
             ipversion_prefer: 4
 
             upstream {
@@ -175,6 +181,22 @@
             dip(geoip:cn) -> direct
             domain(geosite:cn) -> direct
             domain(geosite:steam@cn) -> direct
+
+            # 出口没有 IPv6：KR 节点上 `ip -6 addr` 没有全局地址、`ip -6 route`
+            # 只有 fe80::/64，所以任何被 fallback 到 proxy 的 IPv6 目标都连不上。
+            # 这种失败在本机看起来是“连上了但没有数据”：dae 先把 TCP 握手
+            # 应答了，等上游失败再 FIN，客户端收到 0 字节且没有 RST —— 也就
+            # 不会触发 Happy Eyeballs 回落 IPv4。2026-11-15 切到 dae 之后
+            # telegraf 的 whois 输入就是这么挂的：它查 whois.iana.org，Go 拨号
+            # 优先取 AAAA，拿到空响应后 whoisparser 报
+            # “domain whois data is invalid”，whois_expiration_timestamp 连续
+            # 24h 无样本 → WhoisMetricMissing 告警（v4 一直是好的）。
+            # 这里让所有 IPv6 目标直连：国内 v6 本来就被 dip(geoip:cn) 拦成
+            # direct，境外 v6 走代理时 100% 是死的，直连至少能用。注意在
+            # dip(geoip:private) / 组播规则之后，它们已经先匹配掉了。
+            # 以后给 KR 节点配上 IPv6 出口，要删掉或收紧这条规则，否则 IPv6
+            # 流量会绕过代理。
+            dip('::/0') -> direct
 
             fallback: proxy
         }
