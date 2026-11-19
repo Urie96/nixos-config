@@ -127,6 +127,10 @@
           # session 还没登录时 tgdl 以 1 退出；RestartSec 别太短，免得刷日志。
           Restart = "on-failure";
           RestartSec = "30s";
+          # session 被注销（401）时 tgdl 以 78（EX_CONFIG）退出：重启修不好，
+          # 只能人工重跑 tgdl-login。这里让它停在 failed 状态以便报警，而不是
+          # 每 30s 重起一次、日志里反复刷同一个 401。
+          RestartPreventExitStatus = [ 78 ];
           # SIGTERM 会让正在下的文件保留 .part，下次启动接着下。
           KillSignal = "SIGTERM";
           TimeoutStopSec = "60s";

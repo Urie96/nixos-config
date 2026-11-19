@@ -196,7 +196,15 @@
             # dip(geoip:private) / 组播规则之后，它们已经先匹配掉了。
             # 以后给 KR 节点配上 IPv6 出口，要删掉或收紧这条规则，否则 IPv6
             # 流量会绕过代理。
-            dip('::/0') -> direct
+            #
+            # 必须用 ipversion(6)，不要写成 dip('::/0')：dae 的 LPM trie 键
+            # 一律是 128 位的（control/kern/tproxy.c 里 route() 直接 memcpy
+            # IPV6_BYTE_LENGTH 字节，prefixlen 初始 128），一个 0 位前缀
+            # 会命中**所有**目标，IPv4 也算在内。2026-11-18 的 commit 里用的
+            # 就是 dip('::/0')，第二天 04:34 部署后 dae 把全部流量（本机 +
+            # LAN）都判成 direct，境外站点和 Telegram 直连全挂（tgdl 因此卡在
+            # SYN-SENT）。
+            ipversion(6) -> direct
 
             fallback: proxy
         }
