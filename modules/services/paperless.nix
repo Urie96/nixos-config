@@ -93,6 +93,10 @@
       # 脚本改的是 working copy，paperless 之后写 originals/archive 用的也是它。
       #
       # 没有 MPF 的普通 JPEG 走同一条命令只会输出 “1 image files unchanged”。
+      #
+      # 这个脚本实际是在 paperless-task-queue 的 systemd 沙箱里跑的，而那个
+      # 沙箱默认禁 @chown，exiftool 重写文件时会因此被 SIGSYS 打死——见下面
+      # SystemCallFilter 那段。
       preConsumeScript = pkgs.writeShellApplication {
         name = "paperless-pre-consume";
         runtimeInputs = [ pkgs.exiftool ];
@@ -311,6 +315,31 @@
           PAPERLESS_PRE_CONSUME_SCRIPT = lib.getExe preConsumeScript;
         };
       };
+
+      # —— pre-consume 脚本需要的沙箱豁免 ——
+      #
+      # 实测（3.4.2）：真正执行 consume_file 的是 task-queue 的 celery worker，
+      # paperless-consumer 只负责把文件丢进默认队列，所以 pre-consume 脚本里的
+      # exiftool 是在 paperless-task-queue.service 的沙箱里跑的
+      # （journal 的 _SYSTEMD_UNIT 确认过）。
+      #
+      # 模块给的默认过滤是
+      #   SystemCallFilter = [ "@system-service" "~@privileged @setuid @keyring" ]
+      # 而 @privileged 里带着 @chown。exiftool 重写文件（只有真的要改才重写，
+      # 也就是带 MPF 的 JPEG 才会走到那一步）时会调 chown() 保住属主，于是被
+      # 内核 SIGSYS 打死，日志里是「错误的系统调用 (core dumped)」。脚本按上面
+      # 注释里「失败不拦文档」的设计只记一条 warning 就继续，于是 MPF 从来没被
+      # 剥掉过（2026 年那 5 张手机拍的病历全是 2 页）。
+      #
+      # 过滤规则按出现顺序合并、后写的覆盖前面的，所以在 deny 列表后面单独把
+      # @chown 放回来即可。服务本身 CapabilityBoundingSet 为空、又不是 root，
+      # chown 最多只能落到自己头上，拿不到额外权限。
+      systemd.services.paperless-task-queue.serviceConfig.SystemCallFilter = lib.mkForce [
+        "@system-service"
+        "~@privileged @setuid @keyring"
+        "mbind"
+        "@chown"
+      ];
 
       services.nginx.virtualHosts."paperless.lubui.com" = {
         addSSL = true;
