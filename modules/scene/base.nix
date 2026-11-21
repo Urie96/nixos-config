@@ -10,6 +10,7 @@
       neovim
       yazi
       tmux
+      herdr
       pi
       git
       basePkgs
@@ -54,6 +55,7 @@
       neovim
       yazi
       tmux
+      herdr
       pi
       git
       basePkgs
@@ -68,6 +70,7 @@
       neovim
       yazi
       tmux
+      herdr
       pi
       git
       nix-daemon
