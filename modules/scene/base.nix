@@ -32,6 +32,7 @@
       neovim
       yazi
       tmux
+      herdr
       pi
       git
       home
