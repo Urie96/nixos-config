@@ -15,7 +15,7 @@ let
       settings = {
         # scene 是「按机器用途覆盖 wrapper 默认值」的地方，wrapper 里那套
         # deepseek/deepseek-flash 是通用默认，这里用 mkForce 让 work 场景赢。
-        defaultModel = lib.mkForce "ep-20261015193016-mtb6n";
+        defaultModel = lib.mkForce "ep-20261120164206-s7lsp";
         defaultProvider = lib.mkForce "ark";
         enabledModels = [ "ark/*" ];
       };
@@ -25,18 +25,8 @@ let
         baseUrl = "https://ark-cn-beijing.bytedance.net/api/v3";
         models = [
           {
-            id = "ep-20261015193016-mtb6n";
-            name = "deepseek-flash_4";
-            contextWindow = 1000000;
-            input = [
-              "text"
-              "image"
-            ];
-            reasoning = true;
-          }
-          {
-            id = "ep-20261015192956-gg59m";
-            name = "deepseek-flash_2";
+            id = "ep-20261120164206-s7lsp";
+            name = "deepseek-flash";
             contextWindow = 1000000;
             input = [
               "text"
@@ -46,8 +36,8 @@ let
           }
           {
             contextWindow = 1000000;
-            name = "gpt-6-astra";
-            id = "ep-20261015192942-kkvhn";
+            name = "gpt-6.2-sol";
+            id = "ep-20261120145837-mv2p5";
             input = [
               "text"
               "image"
