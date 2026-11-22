@@ -27,6 +27,18 @@ hl.monitor {
   scale = 'auto',
 }
 
+-- 虚拟输出（无显示器时用）：nixos-desktop 现在没有接物理显示器，Hyprland 一个
+-- wl_output 都没有，Sunshine / wayvnc 就没东西可抓（日志里是
+-- "Unable to find display or encoder during startup"）。
+-- 开机时若没检测到任何输出，就创建一个 headless 输出；有显示器插着则跳过，
+-- 避免多出一块 phantom 屏。分辨率按远端客户端（mac-mini）的屏幕改。
+hl.monitor {
+  output = 'HEADLESS-1',
+  mode = '1920x1080@60',
+  position = 'auto',
+  scale = 1,
+}
+
 -----------------------
 ---- LOOK AND FEEL ----
 -----------------------
@@ -102,8 +114,14 @@ hl.config {
 ---------------------
 
 -- niri spawn-at-startup "noctalia-shell"
+-- 没有任何输出（无显示器）时先建 headless 虚拟屏，再拉起 shell：
+--   · headless 输出是给 Sunshine/wayvnc 抓屏用的；
+--   · 顺序很关键：quickshell/noctalia 如果比输出先启动，就一个 layer surface 都不建
+--     （bar、启动器全不出现，`hyprctl layers` 为空），之后也不会自己补上，必须重启 shell；
+--   · sleep 1 等输出枚举完，避免接了显示器时误建一块虚拟屏。
+local ensureOutput = [[sleep 1; [ "$(hyprctl monitors -j 2>/dev/null)" = "[]" ] && hyprctl output create headless]]
 hl.on('hyprland.start', function()
-  hl.exec_cmd 'noctalia-shell'
+  hl.exec_cmd (ensureOutput .. '; exec noctalia-shell')
   hl.exec_cmd 'hyprpolkitagent' -- polkit 认证弹窗
   hl.exec_cmd 'hypridle' -- 空闲锁屏（hypridle.conf）
 end)

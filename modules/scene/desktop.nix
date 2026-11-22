@@ -13,6 +13,7 @@
       ++ (with self.nixosModules; [
         kitty
         hyprland
+        sunshine
         font
         keyd
         rime
