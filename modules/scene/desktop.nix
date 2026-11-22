@@ -14,6 +14,7 @@
         kitty
         hyprland
         sunshine
+        kodi
         font
         keyd
         rime
