@@ -75,7 +75,6 @@
         "cmd+k>v" = ''launch --type tab --location after nvim -c 'call feedkeys("\<Space>bn")' '';
         "cmd+k>t" =
           ''launch --type tab --location after lazydeck --eval "deck.api.feedkeys('/')" /quick-access-tools'';
-        "cmd+k>a" = "launch --type tab --location after coding-agent-status status";
         "cmd+k>space" = "launch --type background cliclick ctrl+shift+space";
 
         "ctrl+space" = "discard_event";
@@ -113,7 +112,6 @@
 
       scripts = {
         "actions.py" = ./scripts/actions.py;
-        "coding_agent_status.py" = ./scripts/coding_agent_status.py;
         "group_window.py" = ./scripts/group_window.py;
         "neighbor_window.py" = ./scripts/neighbor_window.py;
         "remote.py" = ./scripts/remote.py;
