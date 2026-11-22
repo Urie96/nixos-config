@@ -120,6 +120,6 @@ ps.sub('ind-app-title', function(args)
   local cwd = tostring(cx.active.current.cwd)
   local home = os.getenv 'HOME'
   if home then cwd = cwd:gsub('^' .. home, '~') end
-  args.value = 'YA:' .. cwd
+  args.value = '󰇥 ' .. cwd
   return args
 end)

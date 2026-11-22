@@ -20,7 +20,6 @@
         ];
         text = lib.removePrefix "#!/usr/bin/env bash\n" (builtins.readFile ./rsync-tool);
       };
-      nur = self.inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system};
     in
     {
       package = pkgs.kitty;
@@ -136,18 +135,18 @@
         ${builtins.readFile ./config/extra_font.conf}
 
         # --------------------------------------- TMUX ------------------------------------------------------
-        map --when-focus-on title:^tmux: alt+j
-        map --when-focus-on title:^tmux: alt+l
-        map --when-focus-on title:^tmux: alt+i
-        map --when-focus-on title:^tmux: alt+k
-        map --when-focus-on title:^tmux: alt+shift+j
-        map --when-focus-on title:^tmux: alt+shift+l
-        map --when-focus-on title:^tmux: alt+shift+i
-        map --when-focus-on title:^tmux: alt+shift+k
-        map --when-focus-on title:^tmux: alt+enter send_text all \x02z
-        map --when-focus-on title:^tmux: cmd+n send_text all \x1bn
-        map --when-focus-on title:^tmux: ctrl+space
-        map --when-focus-on title:^VI: ctrl+space
+        map --when-focus-on title:^  alt+j
+        map --when-focus-on title:^  alt+l
+        map --when-focus-on title:^  alt+i
+        map --when-focus-on title:^  alt+k
+        map --when-focus-on title:^  alt+shift+j
+        map --when-focus-on title:^  alt+shift+l
+        map --when-focus-on title:^  alt+shift+i
+        map --when-focus-on title:^  alt+shift+k
+        map --when-focus-on title:^  alt+enter send_text all \x02z
+        map --when-focus-on title:^  cmd+n send_text all \x1bn
+        map --when-focus-on title:^  ctrl+space
+        map --when-focus-on title:^  ctrl+space
       '';
 
       # control
@@ -170,8 +169,9 @@
 
       # ui
       settings = {
-        active_tab_title_template = "{fmt.fg._e5c07b}{fmt.bg.default}{fmt.bg._e5c07b}{fmt.fg._7b8fe5}{str(num_windows)+' ' if num_windows>1 else ''}{fmt.fg._282c34}{bell_symbol}{title.split(' ')[0]}{fmt.fg._e5c07b}{fmt.bg.default} ";
-        tab_title_template = "{fmt.fg._5c6370}{fmt.bg.default}{fmt.bg._5c6370}{fmt.fg._d7d3cb}{str(num_windows)+' ' if num_windows>1 else ''}{fmt.fg._abb2bf}{bell_symbol}{title.split(' ')[0]}{fmt.fg._5c6370}{fmt.bg.default} ";
+        active_tab_title_template = "{fmt.fg._e5c07b}{fmt.bg.default}{fmt.bg._e5c07b}{fmt.fg._7b8fe5}{str(num_windows)+' ' if num_windows>1 else ''}{fmt.fg._282c34}{bell_symbol}{title}{fmt.fg._e5c07b}{fmt.bg.default} ";
+        # title.split(' ')[0]
+        tab_title_template = "{fmt.fg._5c6370}{fmt.bg.default}{fmt.bg._5c6370}{fmt.fg._d7d3cb}{str(num_windows)+' ' if num_windows>1 else ''}{fmt.fg._abb2bf}{bell_symbol}{title}{fmt.fg._5c6370}{fmt.bg.default} ";
         tab_bar_background = "#1E1E2E";
         inactive_tab_background = "#1E1E2E";
         tab_bar_edge = "top";

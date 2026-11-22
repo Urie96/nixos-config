@@ -68,6 +68,15 @@ in
 
           tab_bar_right = [ { type = "hostname"; } ];
           window_title = "Herdr";
+
+          sidebar.agents.rows = [
+            [
+              "state_icon"
+              "machine"
+              "workspace"
+            ]
+            [ "terminal_title" ]
+          ];
         };
 
         # 不跨 server 重启保存 pane 历史，session.json 保持小。
