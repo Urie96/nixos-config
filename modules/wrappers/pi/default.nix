@@ -53,18 +53,24 @@
     ];
   };
 
-  # 安装入口：modules/base.nix 里 `imports = with self.<class>; [ pi ]` 引用。
-  # 通用的 install 模块只为声明 `wrappers.pi.*` 选项，真正落地靠 enable 打开。
   flake.nixosModules.pi = {
+    imports = [ self.nixosModules.ai ];
     wrappers.pi.enable = true;
+    wrappers.ai.enable = true;
   };
   flake.darwinModules.pi = {
+    imports = [ self.darwinModules.ai ];
     wrappers.pi.enable = true;
+    wrappers.ai.enable = true;
   };
   flake.sysModules.pi = {
+    imports = [ self.sysModules.ai ];
     wrappers.pi.enable = true;
+    wrappers.ai.enable = true;
   };
   flake.droidModules.pi = {
+    imports = [ self.droidModules.ai ];
     wrappers.pi.enable = true;
+    wrappers.ai.enable = true;
   };
 }
