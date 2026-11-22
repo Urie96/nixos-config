@@ -78,11 +78,9 @@ vim.opt.fillchars = {
   eob = ' ',
 }
 
-vim.opt.title = true -- enable neovim change terminal title
-if vim.env.PI_CODING_AGENT then
-  vim.opt.titlestring = 'VI:π'
-else
-  vim.opt.titlestring = "VI:%{fnamemodify(getcwd(), ':t')}"
+if not vim.env.PI_CODING_AGENT then
+  vim.opt.title = true -- enable neovim change terminal title
+  vim.opt.titlestring = " %{fnamemodify(getcwd(), ':t')}"
 end
 
 -- https://neovim.io/doc/user/lua.html#vim.filetype.add()

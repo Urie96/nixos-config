@@ -18,7 +18,9 @@
 #                                   /var/lib/desired-state/<机器名>（纯文本 store path），
 #                                   由 cache.lubui.com 静态发出，机器自己拉取并切换
 #                                   （modules/features/pull-deploy.nix）
-#   onSchedule      flake-update      每周更新 flake.lock 里所有直接 input，开 PR 到 main
+#   onSchedule      flake-update      每周更新 flake.lock 里除 nixpkgs 之外的直接 input，开 PR 到 main
+#   onSchedule      nixpkgs-update    每月更新 flake.lock 里的 nixpkgs，开 PR 到 main
+#                                   （nixpkgs-unstable 每次 bump 都可能构建失败，单独放慢节奏）
 #   onSchedule      daily-merge       每天晚上把 main 合回 daily，再开好 daily → main 的 PR
 #
 # GitHub 侧前提：
@@ -154,7 +156,7 @@ in
         // mkPull "devbox" self.legacyPackages.x86_64-linux.systemConfigs.devbox
         // mkPull "work-macbook" self.darwinConfigurations.work-macbook.config.system.build.toplevel
         // mkPull "nix-on-droid" self.legacyPackages.aarch64-linux.nixOnDroidConfigurations.default.activationPackage;
-      # ── 任务 2：每周更新所有 input ────────────────────────────────────
+      # ── 任务 2：每周更新 input（nixpkgs 除外，见下面的任务 2b）────────
       onSchedule.flake-update = {
         when = {
           dayOfWeek = [ "Sat" ];
@@ -179,8 +181,37 @@ in
           # 等 required checks 通过后由 GitHub 自己 squash 合并；
           # 只在 github / gitea 上有效。
           autoMergeMethod = "squash";
-          excludeInputs = [ "old-nixpkgs" ];
+          # nixpkgs 单独按月更新（任务 2b）；old-nixpkgs 是刻意钉住的回退版本。
+          excludeInputs = [
+            "old-nixpkgs"
+            "nixpkgs"
+          ];
           # perInput = true;
+        };
+      };
+
+      # ── 任务 2b：每月更新 nixpkgs ─────────────────────────────────────
+      # nixpkgs-unstable 每周跟进太频繁：一次 bump 就换掉几千个包，构建/行为
+      # 出错时往往还没等到下一个修复就又被下一次更新覆盖，PR 基本没法收敛。
+      # 所以只留 `nix flake update nixpkgs`（其余 input 都 follows = "nixpkgs"，
+      # 这一条就够了），每月 1 号（UTC）跑一次。
+      # 用独立分支和独立 PR：两条 schedule 各改 flake.lock 里不同的节点，
+      # 各自先 reset 到当前 main 再更新，所以 PR 里只含自己那部分 diff，
+      # 无论先合哪个都不会撞上另一条的改动。
+      onSchedule.nixpkgs-update = {
+        when = {
+          dayOfMonth = [ 1 ];
+          hour = [ 21 ];
+        };
+        outputs.effects.update = flakeUpdate {
+          inherit (primaryRepo) forgeType;
+          updateBranch = "nixpkgs-update";
+          # 只更新这一个 input；`nix flake update nixpkgs` 不会动其它节点。
+          inputs = [ "nixpkgs" ];
+          baseMergeBranch = "main";
+          baseMergeMethod = "reset";
+          commitSummary = "flake.lock: update nixpkgs";
+          autoMergeMethod = "squash";
         };
       };
 
@@ -236,9 +267,9 @@ in
             git config remote.origin.partialclonefilter blob:none
 
             # ── 1) 先把 main 合回 daily ──────────────────────────────
-            # 只落在 main 上的提交（每周 flake-update 的 flake.lock）如果不
-            # 带回 daily，每晚的 daily → main 就会用 daily 的旧 lock 覆盖它
-            # 或者直接冲突。
+            # 只落在 main 上的提交（每周 flake-update / 每月 nixpkgs-update 的
+            # flake.lock）如果不带回 daily，每晚的 daily → main 就会用 daily 的
+            # 旧 lock 覆盖它或者直接冲突。
             # 用默认 merge（允许 fast-forward）：daily 只是落后于 main 时直接
             # 快进，不会为「没有内容变化」留一个合并提交。
             git checkout --quiet -B "$dev" "origin/$dev"

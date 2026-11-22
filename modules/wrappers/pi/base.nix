@@ -25,7 +25,6 @@
       settings = {
         packages = [
           "${./extensions/notify.ts}"
-          "${./extensions/coding-agent-status.ts}"
         ];
       };
 

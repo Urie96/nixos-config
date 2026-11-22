@@ -1,3 +1,16 @@
+let
+  m =
+    {
+      pkgs,
+      ...
+    }:
+    {
+      wrappers.herdr.enable = true;
+      wrappers.pi.settings.packages = [
+        "${pkgs.herdr}/share/herdr/integrations/pi/herdr-agent-state.ts"
+      ];
+    };
+in
 {
   flake.wrappers.herdr =
     { ... }:
@@ -55,6 +68,15 @@
 
           tab_bar_right = [ { type = "hostname"; } ];
           window_title = "Herdr";
+
+          sidebar.agents.rows = [
+            [
+              "state_icon"
+              "machine"
+              "workspace"
+            ]
+            [ "terminal_title" ]
+          ];
         };
 
         # 不跨 server 重启保存 pane 历史，session.json 保持小。
@@ -62,48 +84,8 @@
       };
     };
 
-  # 安装入口：modules/scene/base.nix 里 `imports = with self.<class>; [ herdr ]` 引用。
-  # 通用的 install 模块只为声明 `wrappers.herdr.*` 选项，真正落地靠 enable 打开。
-  # 同时把 herdr 自带的 pi 集成脚本塞进 pi wrapper 的 packages，
-  # 这样 pane 里的 pi 会把 agent 状态报给 herdr。
-  #
-  # 注意：这些输出必须和上面的 `flake.wrappers.herdr` 写在同一个 attrset 里。
-  # 用 `{ ... } // { ... }` 合并会把整个 `flake` 属性覆盖掉（`//` 是浅合并），
-  # `flake.wrappers.herdr` 里的 settings 会静默消失，生成出一份空配置。
-  flake.nixosModules.herdr = {
-    pkgs,
-    ...
-  }: {
-    wrappers.herdr.enable = true;
-    wrappers.pi.settings.packages = [
-      "${pkgs.herdr}/share/herdr/integrations/pi/herdr-agent-state.ts"
-    ];
-  };
-  flake.darwinModules.herdr = {
-    pkgs,
-    ...
-  }: {
-    wrappers.herdr.enable = true;
-    wrappers.pi.settings.packages = [
-      "${pkgs.herdr}/share/herdr/integrations/pi/herdr-agent-state.ts"
-    ];
-  };
-  flake.sysModules.herdr = {
-    pkgs,
-    ...
-  }: {
-    wrappers.herdr.enable = true;
-    wrappers.pi.settings.packages = [
-      "${pkgs.herdr}/share/herdr/integrations/pi/herdr-agent-state.ts"
-    ];
-  };
-  flake.droidModules.herdr = {
-    pkgs,
-    ...
-  }: {
-    wrappers.herdr.enable = true;
-    wrappers.pi.settings.packages = [
-      "${pkgs.herdr}/share/herdr/integrations/pi/herdr-agent-state.ts"
-    ];
-  };
+  flake.nixosModules.herdr = m;
+  flake.darwinModules.herdr = m;
+  flake.sysModules.herdr = m;
+  flake.droidModules.herdr = m;
 }

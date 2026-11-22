@@ -42,6 +42,7 @@
         "wechat"
         "bambu-studio"
         "feishu"
+        "moonlight" # 远程控制 nixos-desktop（Sunshine 服务端）
         # "neteasemusic"
       ];
       system.stateVersion = 5;

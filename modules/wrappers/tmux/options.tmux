@@ -23,7 +23,7 @@ setw -g automatic-rename on   # rename window to reflect current program
 set -g renumber-windows on    # renumber windows when a window is closed
 
 set -g set-titles on          # tmux之外的终端title，比如kitty终端的窗口title
-set -g set-titles-string "tmux:#{session_name}[#{host}]"  # e.g. tmux:0[work-macbook]
+set -g set-titles-string " #{session_name}[#{host}]"
 
 set -g display-panes-time 10000
 set -g display-time 1000      # slightly longer status messages display time

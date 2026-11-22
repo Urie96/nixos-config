@@ -1,5 +1,4 @@
 bind-key f display-popup -E -w 100% -h 100% -b none 'pick-window'
-bind-key a display-popup -E -w 80% -h 80% -b rounded 'coding-agent-status status'
 bind-key v new-window nvim -c 'call feedkeys("\<Space>bn")'
 # bind-key C-space display-popup -T ㄓ -h 2 -w 100% -EE -b none \
 #   -x "#{e|+:#{popup_pane_left},#{cursor_x}}" \
