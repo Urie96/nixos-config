@@ -38,6 +38,17 @@
       # confdir 允许写运行时变量（$XDG_RUNTIME_DIR、$HOME 等），脚本运行时再展开。
       confdir = wlib.escapeShellArgWithEnv cfg.confdir;
 
+      # 顶层 pkgs.mitmproxy 在 nixpkgs 里已经把 aioquic 钉到 aioquic_1_2
+      # （pkgs/by-name/mi/mitmproxy/package.nix 的 overrideScope），但裸的
+      # python3Packages.mitmproxy 仍用 aioquic 1.3.0 并被标成 broken：aioquic 1.3
+      # 把 `_get_or_create_stream` 改成返回 context manager，mitmproxy 12.3.1 的
+      # HTTP/3 层会 `AttributeError: '_GeneratorContextManager' object has no attribute
+      # 'ended'`（包自带的 33 个测试会失败）。DEFAULT_DHPARAM 要从包里 import，
+      # 所以这里复用顶层包那套 pin，而不是 pkgs.python3.withPackages 的默认集合。
+      pythonPackages = pkgs.python3Packages.overrideScope (
+        final: prev: { aioquic = final.aioquic_1_2; }
+      );
+
       # ---------------- config.yaml ----------------
       # configFile 优先于 settings；两者都没有时是 null，不生成 config.yaml。
       configYaml =
@@ -51,7 +62,7 @@
       # ---------------- CA ----------------
       # 直接从 mitmproxy 包里取它内置的 DEFAULT_DHPARAM，避免它在 confdir 里自己写一份。
       mitmproxyDhparam = pkgs.runCommandLocal "mitmproxy-dhparam.pem" { } ''
-        ${pkgs.python3.withPackages (ps: [ ps.mitmproxy ])}/bin/python -c \
+        ${pkgs.python3.withPackages (_: [ pythonPackages.mitmproxy ])}/bin/python -c \
           'from mitmproxy.certs import DEFAULT_DHPARAM; import sys; sys.stdout.buffer.write(DEFAULT_DHPARAM)' > $out
       '';
       dhparamFile = if cfg.ca.dhparamFile != null then cfg.ca.dhparamFile else mitmproxyDhparam;
