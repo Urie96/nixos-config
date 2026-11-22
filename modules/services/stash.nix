@@ -20,18 +20,6 @@
 
       services.stash = {
         enable = true;
-        # nixpkgs 的 stash 0.31.1 用默认 go 1.27 构建会失败：postConfigure 里的
-        # `go generate ./cmd/stash`（gqlgen）崩溃。gqlgen vendor 的
-        # golang.org/x/tools v0.38.0 只认识 go1.26 及更早的 unified IR export data
-        # （x/tools/internal/pkgbits numVersions 只到 V2），读到 go 1.27 编译出的
-        # 依赖包时解码失败，于是 go/packages 只能 log.Fatalf
-        # `internal error: package "context" without types was imported from ...`；
-        # 而 gqlgen 在 main 里把 log 输出 setOutput(io.Discard)，所以只剩
-        # `exit status 1`（前面那句 modcache index 报错只是 x/tools 初始化时的噪音，不是原因）。
-        # 换 go 1.26 构建可正常通过（`nix build` 已验证）。
-        package = pkgs.stash.override {
-          buildGoModule = pkgs.buildGoModule.override { go = pkgs.go_1_26; };
-        };
         username = "urie";
         passwordFile = config.clan.core.vars.generators.stash.files.password.path;
         jwtSecretKeyFile = config.clan.core.vars.generators.stash.files.jwt_key.path;
