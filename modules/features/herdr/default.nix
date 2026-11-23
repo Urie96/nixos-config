@@ -14,10 +14,16 @@
       config,
       lib,
       pkgs,
+      inputs',
       ...
     }:
     let
       cfg = config.programs.herdr;
+
+      # nur-packages 里的 herdr-nvim：包根目录就是插件根（herdr-plugin.toml +
+      # bin/ + lua/ + plugin/ + doc/），所以同一个包既注册成 herdr 插件，又当
+      # nvim 插件用（见 modules/wrappers/neovim/default.nix）。
+      herdrNvim = inputs'.nur-packages.packages.herdr-nvim;
 
       # plugins.json 是 herdr 会重写的可变状态（plugin install/link/enable/disable
       # 都写它，另有 .plugins.lock 锁文件），所以不能像 config.toml 那样软链到
@@ -47,8 +53,18 @@
           run install -Dm644 ${registry} "${config.xdg.configHome}/herdr/plugins.json"
         '';
 
+        # herdr-nvim 的 Lua 只在 app 模式下 exec 自己的二进制；TUI 模式下动作由
+        # herdr 按 plugin_root 解析 `bin/herdr-nvim` 起进程，列表/发送走 `herdr`
+        # CLI。装进 PATH 只是为了能直接敲 `herdr-nvim daemons` / `doctor`，以及
+        # 给别的插件（herdr-gitview 之类）`open --tab <tab> <file>` 用。
+        home.packages = [ herdrNvim ];
+
         programs.herdr = {
           enable = true;
+
+          # herdr 重新读 manifest_path 里的 herdr-plugin.toml 补全 action/pane/
+          # event，所以注册表里这份极简条目就够了（见 registry.py）。
+          plugins = [ herdrNvim ];
 
           # 对应 ~/.config/herdr/config.toml 里去掉注释后仍然生效的部分。
           settings = {
@@ -80,6 +96,23 @@
 
               split_vertical = "prefix+n";
               split_horizontal = "prefix+minus";
+
+              # 插件动作要显式绑：TUI 插件的 herdr-plugin.toml 只声明 action，不像
+              # 桌面 app 的 mod 自带 keys.json。这是 herdr-nvim TUI.md 里的推荐键位。
+              command = [
+                {
+                  key = "prefix+e";
+                  type = "plugin_action";
+                  command = "chmarax.herdr-nvim.toggle";
+                  description = "nvim sidebar";
+                }
+                {
+                  key = "prefix+o";
+                  type = "plugin_action";
+                  command = "chmarax.herdr-nvim.pick-file";
+                  description = "open file from agent output";
+                }
+              ];
             };
 
             ui = {
