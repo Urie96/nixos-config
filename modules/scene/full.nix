@@ -40,7 +40,6 @@
         mitmproxy
         vdirsyncer
         todoman
-        kitty
 
         fullPkgs
       ];
@@ -50,6 +49,7 @@
           full
           zen-browser
           tinycast
+          kitty
         ];
       };
     };

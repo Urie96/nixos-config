@@ -7,8 +7,8 @@ from kittens.ssh.utils import get_connection_data
 from kittens.tui.handler import result_handler
 from kitty.boss import Boss
 
-# nix 打包时替换成 store 里的绝对路径，见 modules/wrappers/kitty/module.nix 的
-# substituteScriptVars 和 ./default.nix 的 scriptVars
+# 写进 ~/.config/kitty/ 时替换成 store 里的绝对路径，见 modules/home/kitty/default.nix
+# 的 substituteScriptVars 和 scriptVars
 MPV = "@MPV@"
 RSYNC_TOOL = "@RSYNC_TOOL@"
 
