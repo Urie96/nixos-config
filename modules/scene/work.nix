@@ -2,16 +2,15 @@
 let
 
   work-common =
-    { config, self, ... }:
+    { self, ... }:
     {
       environment.variables = {
         WORK = "1";
       };
 
       # 个人身份是 modules/home/git.nix 里的 mkDefault，这里直接覆盖成公司身份
-      # （原来是 wrappers.git.settings.user）。`my.mainUser.name` 在 nix-darwin
-      # 那边由 modules/common/darwin.nix 从 system.primaryUser 映射过来。
-      home-manager.users.${config.my.mainUser.name} = {
+      # （原来是 wrappers.git.settings.user）。`hm` 是 home-manager 当前主用户配置的别名。
+      hm = {
         imports = [ self.homeModules.codex ];
 
         programs.git.settings.user = {
