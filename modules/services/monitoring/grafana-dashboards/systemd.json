@@ -1,7 +1,7 @@
 {
   "uid": "systemd-units",
   "title": "systemd 单元状态",
-  "tags": ["systemd", "monitoring"],
+  "tags": ["systemd"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,

@@ -47,6 +47,19 @@
           annotations.description = lib.mkForce "{{$labels.host}} 上的 {{$labels.name}} 启动失败（active=failed，已持续 2 分钟以上），看 journalctl -u {{$labels.name}}";
         };
 
+        # srvos 默认 80% 就报，太吵
+        # 改成 90% 才报。key 仍然是 srvos 的 Filesystem80percentFull（不改 key 才能
+        # 覆盖它），但把 alertname 改成 Filesystem90percentFull，通知里不会出现 80。
+        # 表达式只跟着改阈值：mode!="ro" 是为了排掉 /nix/store 这种只读挂载。
+        Filesystem80percentFull = {
+          name = "Filesystem90percentFull";
+          expr = lib.mkForce ''disk_used_percent{mode!="ro"} >= 90'';
+          for = lib.mkForce "10m";
+          labels.severity = "warning";
+          annotations.summary = "文件系统使用率超过 90%";
+          annotations.description = lib.mkForce "{{$labels.host}} 的 {{$labels.path}}（{{$labels.device}}）只剩不到 10% 空间，清理或扩容。";
+        };
+
         # 默认 7 天，留出续期时间改成 14 天（对所有 x509_cert 探针生效）
         # CertExpiry = {
         #   expr = lib.mkForce ''x509_cert_expiry{type="leaf"} < 14*24*3600'';

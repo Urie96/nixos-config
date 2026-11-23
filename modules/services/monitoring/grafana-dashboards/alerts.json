@@ -1,7 +1,7 @@
 {
   "uid": "alerts-overview",
   "title": "告警总览",
-  "tags": ["alerts", "monitoring"],
+  "tags": ["alerts"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,

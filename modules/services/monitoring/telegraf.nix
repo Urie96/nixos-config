@@ -28,7 +28,7 @@
             #   http_response_result_code{site="lubui.com"}              # 0 = 请求成功
             #   http_response_response_time{site="lubui.com"}            # 响应耗时（秒）
             #   systemd_units_active_code != 0                           # 非 active 的 systemd 单元
-            #   disk_used_percent >= 80                                  # 快满的文件系统
+            #   disk_used_percent{mode!="ro"} >= 90                     # 快满的文件系统
             #   smart_device_health_ok != 1                              # SMART 总体健康位失败
             #   smart_attribute_raw_value{id="197"} > 0                  # 待定坏扇区，任何非 0 都该看
             #
@@ -158,6 +158,19 @@
             # Load15 / Uptime / Reboot（system_load15、system_uptime）
             system = { };
 
+            # CPU 使用率（cpu_usage_idle / cpu_usage_user / cpu_usage_system ...）。
+            # percpu = false 只出 cpu="cpu-total" 一条，否则每核一条，看板没必要。
+            cpu = {
+              percpu = false;
+            };
+
+            # Swap 使用率（swap_used_percent），本机是 zram。
+            swap = { };
+
+            # 网卡收发速率（net_bytes_recv / net_bytes_sent 等）。
+            # 1.40 已经不再输出 TCP/UDP 协议统计，没有额外开关要关。
+            net = { };
+
             # RamUsing95Percent / SwapUsing30Percent（mem_*、mem_swap_*）
             # 注意本机开了 zram，swap 里含 zram：内存一紧张 swap 用量就会上去，
             # 30% 的阈值可能偏敏感，觉得吵就把 srvos 那条的系数改大。
@@ -166,7 +179,8 @@
             # OomKills / HostMemoryUnderMemoryPressure（kernel_vmstat_oom_kill、pgmajfault）
             kernel_vmstat = { };
 
-            # Filesystem80percentFull / FilesystemInodesFull / Ext4Errors（disk_used_percent 等）
+            # Filesystem90percentFull / FilesystemInodesFull / Ext4Errors（disk_used_percent 等）
+            # （阈值 90% 在 srvos-rules.nix 里覆盖，srvos 默认是 80%）
             # telegraf 1.40 的 disk 默认不过滤 tmpfs/devtmpfs，不排掉的话
             # 每个 /run/user/* 都会冒出一条序列，还会把“/run 满了”这种噪音算进来。
             # podman 的 overlay 挂载同理，必须排除，否则容器一多序列数会爆。

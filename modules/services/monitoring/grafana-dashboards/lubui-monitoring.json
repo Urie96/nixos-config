@@ -2,8 +2,7 @@
   "uid": "lubui-monitoring",
   "title": "Lubui 网站监控",
   "tags": [
-    "lubui",
-    "monitoring"
+    "lubui"
   ],
   "timezone": "browser",
   "schemaVersion": 41,
