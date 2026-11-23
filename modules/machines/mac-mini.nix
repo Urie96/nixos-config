@@ -24,7 +24,7 @@
         nix-builders-builder
       ];
 
-      system.primaryUser = "urie";
+      my.mainUser.name = "urie";
 
       environment.systemPackages = ([
         inputs'.clan-core.packages.default

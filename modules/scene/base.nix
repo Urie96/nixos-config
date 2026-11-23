@@ -12,7 +12,6 @@
       tmux
       herdr
       pi
-      git
       basePkgs
       catppuccin
     ];
@@ -38,7 +37,6 @@
       tmux
       herdr
       pi
-      git
       home
       common
       rime
@@ -60,7 +58,6 @@
       tmux
       herdr
       pi
-      git
       basePkgs
     ];
   };
@@ -75,7 +72,6 @@
       tmux
       herdr
       pi
-      git
       nix-daemon
       home
       font

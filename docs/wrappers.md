@@ -40,7 +40,7 @@
 
 - `constructFiles.<file> = { relPath = "${config.binName}config"; content = …; };`
 - 引用时用 `config.constructFiles.<file>.path`（占位符），不用 `.outPath`，否则产物自引用。
-- 想留覆盖口就照 `modules/wrappers/git.nix`：`configFile` 用 `wlib.types.file { path = lib.mkOptionDefault config.constructFiles.<file>.path; }`。
+- 想留覆盖口就照 `modules/wrappers/vdirsyncer/module.nix`：`configFile` 用 `wlib.types.file { path = lib.mkOptionDefault config.constructFiles.<file>.path; }`。
 
 完成标准：`nix build .#foo` 出包，`$out` 里有 `bin/foo` 和内容正确的生成配置。（wrapper 默认都导出成 `packages.<system>.<name>`；`flake.nix` 的 `wrappers.packages` 里标了 `true` 的会被排除。）
 
@@ -88,4 +88,4 @@ imports = with self.nixosModules; [ foo ];
 两个例外：
 
 - `programs.<x>.package` 本身就会把包加进系统包列表（如 `programs.fish.package`），此时不要再 `enable`，否则同一路径装两遍。
-- 需要 `meta.priority` 才能赢过其他模块塞进来的同名包时（如 `git` 对 srvos 的 `git-minimal`），别用 `enable`，直接在模块里写 `environment.systemPackages = [ (lib.hiPrio config.wrappers.<name>.wrapper) ];`。
+- 需要 `meta.priority` 才能赢过其他模块塞进来的同名包时，别用 `enable`，直接在模块里写 `environment.systemPackages = [ (lib.hiPrio config.wrappers.<name>.wrapper) ];`。（如果目标程序有现成的 home-manager 模块，比如 `programs.git`，优先走 home-manager：home profile 在 PATH 上本来就排在 `environment.systemPackages` 前面，不需要 priority 技巧。）

@@ -85,9 +85,12 @@
       config,
       pkgs,
       lib,
+      self,
       ...
     }:
     {
+      imports = [ self.homeModules.git ];
+
       home.homeDirectory = lib.mkDefault (
         if pkgs.stdenv.hostPlatform.isDarwin then
           "/Users/${config.home.username}"

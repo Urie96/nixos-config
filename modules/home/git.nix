@@ -1,63 +1,51 @@
 {
-  flake.wrappers.git =
+  # 原来这里是 modules/wrappers/git.nix 里的 nix-wrapper-modules wrapper
+  # （用 GIT_CONFIG_GLOBAL 指到 wrapper 输出里的 gitconfig）。改成 home-manager
+  # 的 programs.git 之后，配置写到 $XDG_CONFIG_HOME/git/config —— 这是 git 默认
+  # 读取的全局配置，不需要再包一层；包由 home profile 提供，PATH 上排在
+  # system 的 git-minimal 之前，也就不需要 hiPrio 了。
+  #
+  # 由 flake.homeModules.common import（见 modules/home/home.nix），
+  # 所以每台开了 home-manager 的机器的主用户都会有一份。
+  flake.homeModules.git =
     {
-      pkgs,
-      wlib,
       lib,
-      config,
+      pkgs,
       ...
     }:
     {
-      imports = [ wlib.wrapperModules.git ];
+      programs.git = {
+        enable = true;
 
-      options.ignore = lib.mkOption {
-        type = lib.types.lines;
-        default = "";
-        description = ''
-          全局 gitignore 内容（多行字符串）。内容会通过 constructFiles 生成一个
-          ignore 文件，和 gitconfig 放在同一个输出里，并把 gitconfig 的
-          `[core] excludesFile` 指向它。
-        '';
-      };
-
-      config = {
-        # 该模块同时用了顶层 options/config，其它配置必须写在 config 里
+        # 和原来的 wrapper 一致，用 gitMinimal（没有 svn/gui/send-email）。
         package = pkgs.gitMinimal;
 
-        # 和 generate 出来的 gitconfig 放在同一个 wrapper 输出目录下：
-        #   ${config.binName}config -> gitconfig
-        #   ${config.binName}ignore -> gitignore
-        constructFiles.gitignore = {
-          relPath = "${config.binName}ignore";
-          content = config.ignore;
-        };
-
-        ignore = ''
-          *~
-          *.swp
-          *.swo
-          .DS_Store
-          .gdb_history
-          .direnv.*
-          .direnv
-          tags
-          .mypy_cache/
-          .pytest_cache/
-          .ruff_cache/
-          .cache/clangd
-          .terraform/
+        # 全局 ignore：home-manager 写到 $XDG_CONFIG_HOME/git/ignore，也就是
+        # git 默认的 core.excludesFile 位置，不用再显式指定。
+        ignores = [
+          "*~"
+          "*.swp"
+          "*.swo"
+          ".DS_Store"
+          ".gdb_history"
+          ".direnv.*"
+          ".direnv"
+          "tags"
+          ".mypy_cache/"
+          ".pytest_cache/"
+          ".ruff_cache/"
+          ".cache/clangd"
+          ".terraform/"
 
           # Devenv
-          .devenv*
-          devenv.local.nix
-        '';
+          ".devenv*"
+          "devenv.local.nix"
+        ];
 
         settings = {
           core = {
             pager = "delta";
             editor = "nvim";
-            # 用 .path（占位符）而不是 .outPath，避免产物自引用。
-            excludesFile = config.constructFiles.gitignore.path;
           };
 
           interactive = {
@@ -93,9 +81,10 @@
             features = "catppuccin-mocha";
           };
 
+          # 个人身份是默认值，work 场景（modules/scene/work.nix）直接覆成公司身份。
           user = {
-            name = "yangrui";
-            email = "lubui.com@gmail.com";
+            name = lib.mkDefault "yangrui";
+            email = lib.mkDefault "lubui.com@gmail.com";
           };
 
           gpg.format = "ssh";
@@ -177,21 +166,4 @@
         };
       };
     };
-
-  # 安装入口：modules/base.nix 里 `imports = with self.<class>; [ git ]` 引用。
-  # 这里不走通用的 `wrappers.git.enable`：srvos 等模块会直接往 systemPackages 里塞
-  # git-minimal，而 NixOS 的 system-path 用 ignoreCollisions，只有 priority 更低
-  # （数字更小）的那个才会真正落到 sw/bin/git，所以要 hiPrio 保证被包裹的 git 胜出。
-  flake.nixosModules.git =
-    { config, lib, ... }:
-    {
-      environment.systemPackages = [ (lib.hiPrio config.wrappers.git.wrapper) ];
-    };
-  flake.darwinModules.git =
-    { config, lib, ... }:
-    {
-      environment.systemPackages = [ (lib.hiPrio config.wrappers.git.wrapper) ];
-    };
-  flake.sysModules.git = { wrappers.git.enable = true; };
-  flake.droidModules.git = { wrappers.git.enable = true; };
 }
