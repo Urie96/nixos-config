@@ -84,7 +84,18 @@
 
   # 安装入口：modules/full.nix 里 `imports = with self.<class>; [ vdirsyncer ]` 引用。
   # 通用的 install 模块只为声明 `wrappers.vdirsyncer.*` 选项，真正落地靠 enable 打开。
-  flake.nixosModules.vdirsyncer = { wrappers.vdirsyncer.enable = true; };
-  flake.darwinModules.vdirsyncer = { wrappers.vdirsyncer.enable = true; };
-  flake.sysModules.vdirsyncer = { wrappers.vdirsyncer.enable = true; };
+  flake.nixosModules.vdirsyncer = {
+    wrappers.vdirsyncer.enable = true;
+  };
+  flake.darwinModules.vdirsyncer = {
+    wrappers.vdirsyncer.enable = true;
+  };
+  flake.sysModules.vdirsyncer = {
+    wrappers.vdirsyncer.enable = true;
+  };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.vdirsyncer = {
+    wrappers.vdirsyncer.enable = true;
+  };
 }

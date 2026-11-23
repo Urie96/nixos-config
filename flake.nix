@@ -143,6 +143,27 @@
       flake.nixosModules = builtins.mapAttrs (_: v: v.install) self.wrappers;
       flake.darwinModules = builtins.mapAttrs (_: v: v.install) self.wrappers;
 
+      # 同样的 install 模块接到 Home Manager 上：`config.modules.homeManager` 的安装
+      # 行为是 `home.packages = mkIf wrappers.<name>.enable [ wrappers.<name>.wrapper ]`，
+      # 所以 `wrappers.<name>.{enable,wrapper}` 在 home 里和 nixos/darwin 里一模一样，
+      # 只是装进 home profile 而不是 system profile。
+      #
+      # 和 sysModules 一样显式传 `_class`：nix-on-droid 的 Home Manager eval 也不带
+      # class（模块参数 `_class` 是 null），install 模块里 `config.modules.${_class}`
+      # 会抛 "expected a string but found null"。
+      flake.homeModules = builtins.mapAttrs (
+        _: v:
+        { pkgs, ... }:
+        {
+          imports = [
+            (v.install {
+              _class = "homeManager";
+              specialArgs = { inherit pkgs; };
+            })
+          ];
+        }
+      ) self.wrappers;
+
       # system-manager 的 evalModules 不传 class（模块参数 `_class` 是 null），install 模块
       # 里 `config.modules.${_class}` 会直接抛 "expected a string but found null"。
       # 这里显式调用 functor 把 `_class` 补成 "nixos"：system-manager 也有

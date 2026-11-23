@@ -34,8 +34,9 @@ vim.opt.showmode = false -- Don't show the mode, since it's already in the statu
 vim.schedule(function()
   -- Schedule the setting after `UiEnter` because it can increase startup-time.
   -- only set clipboard if not in ssh, to make sure the OSC 52
-  vim.opt.clipboard = vim.env.SSH_TTY and '' or 'unnamedplus' -- Sync with system clipboard
-  vim.g.clipboard = vim.env.SSH_TTY and 'osc52' or nil
+  local is_remote = vim.env.SSH_CONNECTION ~= nil or vim.env.SSH_CLIENT ~= nil or vim.env.SSH_TTY ~= nil
+  vim.opt.clipboard = is_remote and '' or 'unnamedplus' -- Sync with system clipboard
+  vim.g.clipboard = is_remote and 'osc52' or nil
 end)
 vim.opt.breakindent = true -- Enable break indent
 vim.opt.undofile = true -- Save undo history

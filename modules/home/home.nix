@@ -1,7 +1,11 @@
 {
+  # `hm` 是当前主用户 Home Manager 配置的短别名：
+  #   nixos / darwin / sys -> home-manager.users.${config.my.mainUser.name}
+  #   nix-on-droid        -> home-manager.config（没有 users）
   flake.nixosModules.home =
     {
       config,
+      lib,
       self,
       inputs',
       self',
@@ -10,6 +14,7 @@
     {
       imports = [
         self.inputs.home-manager.nixosModules.home-manager
+        (lib.mkAliasOptionModule [ "hm" ] [ "home-manager" "users" config.my.mainUser.name ])
       ];
 
       home-manager = {
@@ -29,8 +34,9 @@
 
   flake.darwinModules.home =
     {
-      self,
       config,
+      lib,
+      self,
       self',
       inputs',
       ...
@@ -38,6 +44,7 @@
     {
       imports = [
         self.inputs.home-manager.darwinModules.home-manager
+        (lib.mkAliasOptionModule [ "hm" ] [ "home-manager" "users" config.my.mainUser.name ])
       ];
 
       home-manager = {
@@ -57,6 +64,7 @@
 
   flake.sysModules.home =
     {
+      lib,
       self,
       self',
       inputs',
@@ -66,6 +74,7 @@
     {
       imports = [
         self.inputs.home-manager.nixosModules.home-manager
+        (lib.mkAliasOptionModule [ "hm" ] [ "home-manager" "users" config.my.mainUser.name ])
       ];
 
       home-manager = {
@@ -85,9 +94,12 @@
       config,
       pkgs,
       lib,
+      self,
       ...
     }:
     {
+      imports = [ self.homeModules.git ];
+
       home.homeDirectory = lib.mkDefault (
         if pkgs.stdenv.hostPlatform.isDarwin then
           "/Users/${config.home.username}"
@@ -107,6 +119,7 @@
 
   flake.droidModules.home =
     {
+      lib,
       self,
       self',
       inputs',
@@ -114,6 +127,11 @@
       ...
     }:
     {
+      imports = [
+        # nix-on-droid 没有 users，HM 配置直接放在 home-manager.config。
+        (lib.mkAliasOptionModule [ "hm" ] [ "home-manager" "config" ])
+      ];
+
       home-manager = {
         backupFileExtension = "backup";
         useGlobalPkgs = true;

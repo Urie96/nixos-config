@@ -2,8 +2,7 @@
   "uid": "nginx",
   "title": "nginx 连接与请求",
   "tags": [
-    "nginx",
-    "monitoring"
+    "nginx"
   ],
   "timezone": "browser",
   "schemaVersion": 41,

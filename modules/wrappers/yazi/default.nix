@@ -259,4 +259,9 @@
   flake.droidModules.yazi = {
     wrappers.yazi.enable = true;
   };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.yazi = {
+    wrappers.yazi.enable = true;
+  };
 }

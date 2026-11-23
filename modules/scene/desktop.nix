@@ -7,11 +7,13 @@
       ...
     }:
     {
+      # kitty 的配置在 Home Manager 里（modules/home/kitty），装进 home profile
+      hm.imports = [ self.homeModules.kitty ];
+
       imports = [
         self.inputs.srvos.nixosModules.desktop
       ]
       ++ (with self.nixosModules; [
-        kitty
         hyprland
         sunshine
         kodi

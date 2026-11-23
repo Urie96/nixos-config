@@ -5,7 +5,7 @@ let
       pkgs,
       ...
     }:
-    # 被包裹的包（lazygit/neovim/yazi/tmux/pi/git/fish 等）不在这里列：
+    # 被包裹的包（lazygit/neovim/yazi/tmux/pi/fish 等）不在这里列：
     # 它们由各自 wrapper 导出的 `<class>Modules.<name>` 安装，
     # 在 modules/base.nix、modules/full.nix 里按名字引用。
     (with inputs'.nur-packages.packages; [

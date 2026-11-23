@@ -94,7 +94,18 @@
 
   # 安装入口：modules/full.nix 里 `imports = with self.<class>; [ rclone ]` 引用。
   # 通用的 install 模块只为声明 `wrappers.rclone.*` 选项，真正落地靠 enable 打开。
-  flake.nixosModules.rclone = { wrappers.rclone.enable = true; };
-  flake.darwinModules.rclone = { wrappers.rclone.enable = true; };
-  flake.sysModules.rclone = { wrappers.rclone.enable = true; };
+  flake.nixosModules.rclone = {
+    wrappers.rclone.enable = true;
+  };
+  flake.darwinModules.rclone = {
+    wrappers.rclone.enable = true;
+  };
+  flake.sysModules.rclone = {
+    wrappers.rclone.enable = true;
+  };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.rclone = {
+    wrappers.rclone.enable = true;
+  };
 }

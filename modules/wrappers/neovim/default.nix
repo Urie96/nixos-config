@@ -10,6 +10,11 @@
     }:
     let
       flatnvim = inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system}.flatnvim;
+      # herdr TUI 插件的同一个包：根目录是 herdr-plugin.toml + bin/ + lua/ +
+      # plugin/ + doc/，所以能直接当 rtp 里的插件用，给任意 nvim 提供 :Herdr 和
+      # :help herdr-nvim。（侧栏那个 nvim 的 keymap 还是 daemon 的 VimEnter 回调
+      # 里 setup() 设的，插件根由 HERDR_NVIM_PLUGIN_ROOT 注入，不依赖这里。）
+      herdrNvim = inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system}.herdr-nvim;
 
       # nvim-dap 源码改为从 GitHub 镜像获取(作者在 codeberg/github 同步推送, rev 一致),
       # 避免 Codeberg 对本机出口 IP 限流导致 fetch 失败。
@@ -59,7 +64,7 @@
         nvim-treesitter-context
         catppuccin-nvim
         nvim-lspconfig
-      ];
+      ] ++ [ herdrNvim ];
       specs.lazy = {
         lazy = true;
         data = with vimPlugins; [
@@ -131,8 +136,21 @@
 
   # 安装入口：modules/base.nix 里 `imports = with self.<class>; [ neovim ]` 引用。
   # 通用的 install 模块只为声明 `wrappers.neovim.*` 选项，真正落地靠 enable 打开。
-  flake.nixosModules.neovim = { wrappers.neovim.enable = true; };
-  flake.darwinModules.neovim = { wrappers.neovim.enable = true; };
-  flake.sysModules.neovim = { wrappers.neovim.enable = true; };
-  flake.droidModules.neovim = { wrappers.neovim.enable = true; };
+  flake.nixosModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+  flake.darwinModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+  flake.sysModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+  flake.droidModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
 }

@@ -55,9 +55,14 @@
       networking.wakeOnLan.enable = true;
       security.pam.services.sudo_local.touchIdAuth = true;
 
+      # nix-darwin 的 `system.primaryUser` 从统一的 `my.mainUser.name` 推出来，
+      # 机器配置只需要声明 `my.mainUser.name`（和 nixos / system-manager 一致），
+      # 不用再单独设一份 `system.primaryUser`。nix-darwin 自己的模块（homebrew、
+      # launchd、users 等）继续读 `system.primaryUser`，不受影响。
+
       system = {
         checks.verifyNixPath = false;
-        primaryUser = lib.mkDefault "urie";
+        primaryUser = config.my.mainUser.name;
         startup.chime = false; # Disable the sound effects on boot
         activationScripts = {
           extraActivation.text =

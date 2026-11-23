@@ -1,4 +1,11 @@
 { inputs, self, ... }:
+let
+  m = {
+    imports = [ self.homeModules.ai ];
+    wrappers.pi.enable = true;
+    wrappers.ai.enable = true;
+  };
+in
 {
   flake.wrappers.pi =
     { pkgs, ... }:
@@ -53,24 +60,9 @@
     ];
   };
 
-  flake.nixosModules.pi = {
-    imports = [ self.nixosModules.ai ];
-    wrappers.pi.enable = true;
-    wrappers.ai.enable = true;
-  };
-  flake.darwinModules.pi = {
-    imports = [ self.darwinModules.ai ];
-    wrappers.pi.enable = true;
-    wrappers.ai.enable = true;
-  };
-  flake.sysModules.pi = {
-    imports = [ self.sysModules.ai ];
-    wrappers.pi.enable = true;
-    wrappers.ai.enable = true;
-  };
-  flake.droidModules.pi = {
-    imports = [ self.droidModules.ai ];
-    wrappers.pi.enable = true;
-    wrappers.ai.enable = true;
-  };
+  flake.homeModules.pi = m;
+  flake.nixosModules.pi = m;
+  flake.darwinModules.pi = m;
+  flake.sysModules.pi = m;
+  flake.droidModules.pi = m;
 }

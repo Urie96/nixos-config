@@ -56,7 +56,7 @@
         set -gx XDG_STATE_HOME ~/.local/state
         set -gx EDITOR nvim
 
-        fish_add_path -g -m ~/bin ~/.local/bin ~/.local/state/nix/profile/bin /run/wrappers/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin "$PNPM_HOME/bin" "$HOME/.cargo/bin" /opt/homebrew/bin /opt/homebrew/sbin
+        fish_add_path -g -m /etc/profiles/per-user/$USER/bin ~/.local/bin ~/.local/state/nix/profile/bin /run/wrappers/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin "$PNPM_HOME/bin" ~/.cargo/bin /opt/homebrew/bin /opt/homebrew/sbin
 
         set -l wrapped_fish_runtime_dir $XDG_RUNTIME_DIR
         if test -z "$wrapped_fish_runtime_dir"
@@ -136,4 +136,11 @@
           };
         };
     };
+
+  # Home Manager 入口：装进 home profile（home.packages）。
+  # 平时用不到：登录 shell 走 modules/features/fish.nix 的 programs.fish.package，
+  # 这里只是让 fish 和其它 wrapper 一样有个 `self.homeModules.fish` 可用。
+  flake.homeModules.fish = {
+    wrappers.fish.enable = true;
+  };
 }
