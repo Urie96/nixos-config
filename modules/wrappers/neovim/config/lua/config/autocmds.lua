@@ -41,7 +41,9 @@ au('FileType', {
 })
 
 local write_osc52_on_yank
-if vim.env.SSH_TTY then write_osc52_on_yank = require('vim.ui.clipboard.osc52').copy '+' end
+if vim.env.SSH_CONNECTION ~= nil or vim.env.SSH_CLIENT ~= nil or vim.env.SSH_TTY ~= nil then
+  write_osc52_on_yank = require('vim.ui.clipboard.osc52').copy '+'
+end
 
 au('TextYankPost', {
   group = ag 'highlight-yank',
