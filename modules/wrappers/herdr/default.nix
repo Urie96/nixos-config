@@ -10,6 +10,38 @@ let
         "${pkgs.herdr}/share/herdr/integrations/pi/herdr-agent-state.ts"
       ];
     };
+
+  # Codex 启用时，把 herdr 自带的 hook 脚本挂到 SessionStart 上，
+  # 让 herdr 能拿到 Codex 的 session id。
+  codexHook =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    {
+      programs.codex.hooks = lib.mkIf config.programs.codex.enable {
+        SessionStart = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "${pkgs.bash}/bin/bash ${pkgs.herdr}/share/herdr/integrations/codex/herdr-agent-state.sh session";
+                timeout = 10;
+              }
+            ];
+          }
+        ];
+      };
+    };
+
+  withCodexHook =
+    { config, ... }:
+    {
+      home-manager.users.${config.my.mainUser.name}.imports = [ codexHook ];
+    };
+
 in
 {
   flake.wrappers.herdr =
@@ -84,8 +116,24 @@ in
       };
     };
 
-  flake.nixosModules.herdr = m;
-  flake.darwinModules.herdr = m;
-  flake.sysModules.herdr = m;
+  # nix-on-droid 没有 home-manager.users，codex hook 只挂到其余三个 class。
+  flake.nixosModules.herdr = {
+    imports = [
+      m
+      withCodexHook
+    ];
+  };
+  flake.darwinModules.herdr = {
+    imports = [
+      m
+      withCodexHook
+    ];
+  };
+  flake.sysModules.herdr = {
+    imports = [
+      m
+      withCodexHook
+    ];
+  };
   flake.droidModules.herdr = m;
 }

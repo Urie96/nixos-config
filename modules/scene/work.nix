@@ -2,7 +2,7 @@
 let
 
   work-common =
-    { config, ... }:
+    { config, self, ... }:
     {
       environment.variables = {
         WORK = "1";
@@ -11,9 +11,13 @@ let
       # 个人身份是 modules/home/git.nix 里的 mkDefault，这里直接覆盖成公司身份
       # （原来是 wrappers.git.settings.user）。`my.mainUser.name` 在 nix-darwin
       # 那边由 modules/common/darwin.nix 从 system.primaryUser 映射过来。
-      home-manager.users.${config.my.mainUser.name}.programs.git.settings.user = {
-        name = "yangrui.0";
-        email = "yangrui.0@bytedance.com";
+      home-manager.users.${config.my.mainUser.name} = {
+        imports = [ self.homeModules.codex ];
+
+        programs.git.settings.user = {
+          name = "yangrui.0";
+          email = "yangrui.0@bytedance.com";
+        };
       };
 
       wrappers.pi = {
