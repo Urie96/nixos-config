@@ -101,8 +101,21 @@
 
   # 安装入口：modules/base.nix 里 `imports = with self.<class>; [ tmux ]` 引用。
   # 通用的 install 模块只为声明 `wrappers.tmux.*` 选项，真正落地靠 enable 打开。
-  flake.nixosModules.tmux = { wrappers.tmux.enable = true; };
-  flake.darwinModules.tmux = { wrappers.tmux.enable = true; };
-  flake.sysModules.tmux = { wrappers.tmux.enable = true; };
-  flake.droidModules.tmux = { wrappers.tmux.enable = true; };
+  flake.nixosModules.tmux = {
+    wrappers.tmux.enable = true;
+  };
+  flake.darwinModules.tmux = {
+    wrappers.tmux.enable = true;
+  };
+  flake.sysModules.tmux = {
+    wrappers.tmux.enable = true;
+  };
+  flake.droidModules.tmux = {
+    wrappers.tmux.enable = true;
+  };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.tmux = {
+    wrappers.tmux.enable = true;
+  };
 }

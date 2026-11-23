@@ -95,7 +95,7 @@
 
           runShell = [
             ''
-              export PI_CODING_AGENT_DIR="$HOME/.config/${config.binName}/agent"
+              export PI_CODING_AGENT_DIR="$HOME/.${config.binName}/agent"
               mkdir -p "$PI_CODING_AGENT_DIR"
               ln -sfn ${config.generatedConfig.placeholder}/settings.json "$PI_CODING_AGENT_DIR/settings.json"
               ln -sfn ${config.generatedConfig.placeholder}/models.json "$PI_CODING_AGENT_DIR/models.json"

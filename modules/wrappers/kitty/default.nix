@@ -208,4 +208,9 @@
   flake.darwinModules.kitty = {
     wrappers.kitty.enable = true;
   };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.kitty = {
+    wrappers.kitty.enable = true;
+  };
 }

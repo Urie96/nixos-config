@@ -76,6 +76,9 @@ flake.nixosModules.foo = { wrappers.foo.enable = true; };
 flake.darwinModules.foo = { wrappers.foo.enable = true; };
 flake.sysModules.foo = { wrappers.foo.enable = true; };
 flake.droidModules.foo = { wrappers.foo.enable = true; };
+
+# 装进 home profile（home.packages）而不是 system profile
+flake.homeModules.foo = { wrappers.foo.enable = true; };
 ```
 
 ```nix
@@ -83,7 +86,13 @@ flake.droidModules.foo = { wrappers.foo.enable = true; };
 imports = with self.nixosModules; [ foo ];
 ```
 
-`wrappers.<name>.enable` 来自 nix-wrapper-modules 的 `.install` 模块（`flake.nix` 里把 `v.install` 批量导出成 `flake.<class>Modules.<name>`）。各 class 的落地点：nixos / nix-darwin / system-manager → `environment.systemPackages`，nix-on-droid → `environment.packages`（`flake.nix` 里有对应的薄壳，因为 system-manager 不传 `_class`、nix-on-droid 的 class 是 `nixOnDroid`）。
+## 装到 system 还是 home
+
+`wrappers.<name>.enable` 来自 nix-wrapper-modules 的 `.install` 模块（`flake.nix` 里把 `v.install` 批量导出成 `flake.<class>Modules.<name>`）。各 class 的落地点：nixos / nix-darwin / system-manager → `environment.systemPackages`，nix-on-droid → `environment.packages`（`flake.nix` 里有对应的薄壳，因为 system-manager 不传 `_class`、nix-on-droid 的 class 是 `nixOnDroid`），**home-manager → `home.packages`**。
+
+所以 `wrappers.<name>` 这套选项在 Home Manager 里同样可用：`flake.homeModules.<name>` 是批量生成的 install 模块（`flake.nix` 里和 sysModules 一样显式传 `_class = "homeManager"`，因为 nix-on-droid 的 Home Manager eval 也不带 class），wrapper 自己的文件再补一个 `flake.homeModules.<name> = { wrappers.<name>.enable = true; }` 作为“装到 home”的入口。
+
+两者只差安装位置：home profile 在 PATH 上排在 `environment.systemPackages` 前面，不需要 `meta.priority`。目前 pi 走 home（见 `modules/wrappers/pi/default.nix`），其余 wrapper 仍装 system；覆盖配置的位置也跟着走——system 装的是 `wrappers.<name>.*`，home 装的是 `hm.wrappers.<name>.*`（例：`modules/scene/work.nix` 覆盖的是 `hm.wrappers.pi.settings`）。
 
 两个例外：
 

@@ -116,7 +116,18 @@
 
   # 安装入口：modules/full.nix 里 `imports = with self.<class>; [ mitmproxy ]` 引用。
   # 通用的 install 模块只为声明 `wrappers.mitmproxy.*` 选项，真正落地靠 enable 打开。
-  flake.nixosModules.mitmproxy = { wrappers.mitmproxy.enable = true; };
-  flake.darwinModules.mitmproxy = { wrappers.mitmproxy.enable = true; };
-  flake.sysModules.mitmproxy = { wrappers.mitmproxy.enable = true; };
+  flake.nixosModules.mitmproxy = {
+    wrappers.mitmproxy.enable = true;
+  };
+  flake.darwinModules.mitmproxy = {
+    wrappers.mitmproxy.enable = true;
+  };
+  flake.sysModules.mitmproxy = {
+    wrappers.mitmproxy.enable = true;
+  };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.mitmproxy = {
+    wrappers.mitmproxy.enable = true;
+  };
 }

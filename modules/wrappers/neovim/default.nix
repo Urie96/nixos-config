@@ -131,8 +131,21 @@
 
   # 安装入口：modules/base.nix 里 `imports = with self.<class>; [ neovim ]` 引用。
   # 通用的 install 模块只为声明 `wrappers.neovim.*` 选项，真正落地靠 enable 打开。
-  flake.nixosModules.neovim = { wrappers.neovim.enable = true; };
-  flake.darwinModules.neovim = { wrappers.neovim.enable = true; };
-  flake.sysModules.neovim = { wrappers.neovim.enable = true; };
-  flake.droidModules.neovim = { wrappers.neovim.enable = true; };
+  flake.nixosModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+  flake.darwinModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+  flake.sysModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+  flake.droidModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
+
+  # Home Manager 入口：装进 home profile（home.packages），不占 system profile。
+  flake.homeModules.neovim = {
+    wrappers.neovim.enable = true;
+  };
 }
