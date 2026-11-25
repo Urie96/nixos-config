@@ -537,11 +537,11 @@
         "nmd": "nmd"
       },
       "locked": {
-        "lastModified": 1791954472,
-        "narHash": "sha256-evptmVTHxfBXxjS96OlyDDNGjvlyIMr7rv2tUrmEsRE=",
+        "lastModified": 1795620955,
+        "narHash": "sha256-TgD7wglsRXz3mMbPAgjO8wjumX3TNC60B8UYpCO7dAw=",
         "owner": "Urie96",
         "repo": "nix-on-droid",
-        "rev": "de9454ff7d0ada7cec18963b00be9779f667f3ad",
+        "rev": "857b082286bb734df3aaeeeb037951bf41303f2d",
         "type": "github"
       },
       "original": {
