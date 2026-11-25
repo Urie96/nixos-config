@@ -21,6 +21,21 @@
 #     toplevel 标成 allowSubstitutes = false 的目标也照样能拉；
 #   · 缓存里万一真的没有，它会退化成在本地构建，而不是直接失败。
 # darwin 多一个 `--profile`：拉下来的同时把它登记成当前 profile。
+#
+# ── 手动触发（不等定时器）────────────────────────────────────────────────────
+#
+#   work-macbook   sudo launchctl kickstart -k system/pull-deploy
+#                  激活过程没有终端输出，日志在 /var/log/pull-deploy.log
+#   devbox         sudo systemctl start pull-deploy
+#                  journalctl -u pull-deploy -f 看输出
+#   nix-on-droid   pull-deploy
+#                  脚本本身在 PATH 里（见下面 droid 的 environment.packages）
+#
+# 前两台走各自的调度器，而不是直接跑脚本：同一个 launchd job / systemd unit 不会
+# 并发，手动触发和定时触发天然互斥。supercronic 没有「现在就跑一次」的入口，
+# 只能直接跑脚本；脚本自带 flock，和正在跑的 cron 任务互斥。
+#
+# 三台的脚本本身是幂等的：清单和当前 system 一致时什么都不做，所以重复触发无副作用。
 let
   # 三个 class 共用的选项。机器名显式写（devbox / work-macbook / nix-on-droid），
   # 不猜 hostname：清单的 key 就是它。
@@ -302,6 +317,10 @@ in
           schedule = cfg.schedule;
           command = "${pullDeploy}/bin/pull-deploy";
         };
+
+        # supercronic 只能等 cron 表达式到点，没有「立刻跑一次」的入口，所以把
+        # 同一个脚本也放进 PATH，方便手动触发：直接 `pull-deploy`。
+        environment.packages = [ pullDeploy ];
       };
     };
 }

@@ -307,8 +307,21 @@
                   if ! { [ -n "$tinycastJob" ] && /bin/launchctl kickstart "gui/$(id -u)/$tinycastJob"; }; then
                     # 按路径打开最可靠；刚 rsync 进来的副本可能还没进 LaunchServices 索引，
                     # 所以 `open -b` 只能当最后一条。
-                    /usr/bin/open ${lib.escapeShellArg appPath} 2>/dev/null \
-                      || /usr/bin/open -b ${cfg.domain} 2>/dev/null \
+                    #
+                    # `open` 会把调用方的环境原样交给 LaunchServices 拉起的 App，而这里跑的是
+                    # home-manager 的 activate 脚本（sudo 下执行）：它的 PATH 是一串纯 nix store
+                    # 路径，不含 /usr/bin，还带着 SUDO_*/DRY_RUN_*/VERBOSE_*。这段环境一旦漏进去会
+                    # 一路继承下去 —— Tinycast 的自定义命令是经 zsh 起的，PATH 不被重置，于是
+                    # `open -a kitty` 拉起的 kitty、以及 kitty 里 `launch ... nvim` 起的 nvim 都拿到
+                    # 这份 PATH，nvim 的 pbcopy provider 找不到 pbcopy，复制静默失败。
+                    # 所以拉起 App 前先用 `env -i` 换成 GUI 进程该有的最小环境。
+                    openClean=${lib.getExe' pkgs.coreutils "env"} -i \
+                      HOME=${lib.escapeShellArg config.home.homeDirectory} \
+                      USER=${lib.escapeShellArg config.home.username} \
+                      LOGNAME=${lib.escapeShellArg config.home.username} \
+                      PATH=/usr/bin:/bin:/usr/sbin:/sbin
+                    $openClean /usr/bin/open ${lib.escapeShellArg appPath} 2>/dev/null \
+                      || $openClean /usr/bin/open -b ${cfg.domain} 2>/dev/null \
                       || echo "tinycast: 没能自动拉起，手动开一下；App 换了路径，顺手把「登录时启动」重新打开"
                   fi
                 fi
