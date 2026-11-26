@@ -22,18 +22,27 @@
 #   · 缓存里万一真的没有，它会退化成在本地构建，而不是直接失败。
 # darwin 多一个 `--profile`：拉下来的同时把它登记成当前 profile。
 #
-# ── 手动触发（不等定时器）────────────────────────────────────────────────────
+# ── 手动触发 / 预演 ─────────────────────────────────────────────────────────
+#
+# 三个 class 都把脚本装进了 system profile，所以命令本身在 PATH 里：
+#
+#   pull-deploy --dry    预演：拉清单，和当前 system 比较；不一致就
+#                        `nix store diff-closures <当前> <清单>` 打印这次会变动的包，
+#                        不激活、不写 profile/gcroot。不需要 root（只是下载 + 只读）。
+#                        注意它会先把清单里的闭包拉下来 —— 差异必须两边都在 store 里
+#                        才算得出来；拉下来不激活，系统状态不变，反而让随后的真部署更快。
+#   pull-deploy          立刻真部署一次（需要 root：activate 要写 /etc、gcroots、profile）
+#
+# 也可以走各自的调度器（保证不和正在跑的那一次并发）：
 #
 #   work-macbook   sudo launchctl kickstart -k system/pull-deploy
 #                  激活过程没有终端输出，日志在 /var/log/pull-deploy.log
 #   devbox         sudo systemctl start pull-deploy
 #                  journalctl -u pull-deploy -f 看输出
-#   nix-on-droid   pull-deploy
-#                  脚本本身在 PATH 里（见下面 droid 的 environment.packages）
+#   nix-on-droid   supercronic 没有「现在就跑一次」的入口，只能直接跑脚本
 #
-# 前两台走各自的调度器，而不是直接跑脚本：同一个 launchd job / systemd unit 不会
-# 并发，手动触发和定时触发天然互斥。supercronic 没有「现在就跑一次」的入口，
-# 只能直接跑脚本；脚本自带 flock，和正在跑的 cron 任务互斥。
+# systemd / launchd 手动触发和定时触发天然互斥（同一个 unit / job 不会并发）；
+# droid 直接跑脚本时靠脚本自带的 flock 和 cron 任务互斥。
 #
 # 三台的脚本本身是幂等的：清单和当前 system 一致时什么都不做，所以重复触发无副作用。
 let
@@ -109,6 +118,29 @@ let
         state_url='${stateUrl}'
         current='${current}'
 
+        # 唯一的参数是 --dry：只打印差异，不做任何会改变系统状态的事。
+        # --dry-run / -n 是别名，方便手滑。
+        dry_run=false
+        if [ "$#" -gt 1 ]; then
+          echo "用法: pull-deploy [--dry]" >&2
+          exit 2
+        fi
+        case "''${1:-}" in
+          -n | --dry | --dry-run) dry_run=true ;;
+          "") ;;
+          -h | --help)
+            echo "用法: pull-deploy [--dry]"
+            echo
+            echo "  不加参数   立即按清单切换（需要 root）"
+            echo "  --dry      只打印与清单的闭包差异，不激活"
+            exit 0
+            ;;
+          *)
+            echo "用法: pull-deploy [--dry]" >&2
+            exit 2
+            ;;
+        esac
+
         ${lockSetup}
 
         if ! want=$(curl -fsSL --retry 2 "$state_url"); then
@@ -127,6 +159,26 @@ let
 
         have=$(readlink -f "$current" 2>/dev/null || true)
         if [ "$want" = "$have" ]; then
+          # 正常定时运行时保持安静（否则每半小时往 journal 写一行噪音）；
+          # 手动 --dry 时给个人能看懂的结论。
+          if [ "$dry_run" = true ]; then
+            echo "==> ${machine}: 已经是最新的 $want，没有待应用的变更"
+          fi
+          exit 0
+        fi
+
+        if [ "$dry_run" = true ]; then
+          echo "==> ${machine}: $have -> $want"
+          echo "    （dry run：只比较闭包，不激活、不写 profile/gcroot）"
+          if [ -n "$have" ] && [ -e "$have" ]; then
+            # 两边闭包都得在 store 里才算得出差异，want 还没下载时这里会先替代下来。
+            # 参数顺序是「旧的 新的」：`∅ → x` 是这次新装的，`x → ∅` 是这次去掉的，
+            # `1.2 → 1.3` 是升/降级，行尾是闭包大小变化。
+            nix store diff-closures "$have" "$want" ||
+              echo "无法计算闭包差异：旧 generation 可能已被 GC，或缓存里没有 $want" >&2
+          else
+            echo "当前没有可比较的 generation（$current 未指向任何路径）" >&2
+          fi
           exit 0
         fi
 
@@ -181,6 +233,10 @@ in
       };
 
       config = lib.mkIf cfg.enable {
+        # 装进 system profile，这样 `pull-deploy --dry` 手动预演时不用去 store 里翻路径；
+        # 定时切换仍然走下面的 LaunchDaemon（同一个 store path）。
+        environment.systemPackages = [ pullDeploy ];
+
         # launchd 不会同时跑同一个 job 的两个实例，所以不需要 flock。
         launchd.daemons.pull-deploy = {
           serviceConfig = {
@@ -240,6 +296,10 @@ in
       };
 
       config = lib.mkIf cfg.enable {
+        # 装进 system profile（落到 /run/system-manager/sw/bin），方便手动
+        # `pull-deploy --dry` 预演；定时切换仍然走下面的 unit。
+        environment.systemPackages = [ pullDeploy ];
+
         # systemd 对已经在跑的 oneshot 再触发 start 是 no-op，不会并发，不需要锁。
         systemd.services.pull-deploy = {
           script = "${pullDeploy}/bin/pull-deploy";
@@ -319,7 +379,7 @@ in
         };
 
         # supercronic 只能等 cron 表达式到点，没有「立刻跑一次」的入口，所以把
-        # 同一个脚本也放进 PATH，方便手动触发：直接 `pull-deploy`。
+        # 同一个脚本也放进 PATH，方便手动触发：`pull-deploy` / `pull-deploy --dry`。
         environment.packages = [ pullDeploy ];
       };
     };
