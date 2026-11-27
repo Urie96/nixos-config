@@ -3,6 +3,7 @@
     imports = with self.nixosModules; [
       home
       common
+      sshd
       nix-daemon
       user
       fish
@@ -33,6 +34,7 @@
       tmux
       home
       common
+      sshd
       rime
       nix-daemon
       basePkgs
@@ -43,6 +45,7 @@
     imports = with self.sysModules; [
       home
       common
+      sshd
       nix-daemon
       user
       fish
@@ -57,6 +60,7 @@
   flake.droidModules.base = {
     imports = with self.droidModules; [
       common
+      sshd
       fish
       lazygit
       neovim
