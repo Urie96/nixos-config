@@ -10,6 +10,7 @@
     {
       imports = with self.nixosModules; [
         minimal
+        sshd
       ];
 
       environment.systemPackages = with pkgs; [
