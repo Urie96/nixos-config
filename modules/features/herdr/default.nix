@@ -20,10 +20,28 @@
     let
       cfg = config.programs.herdr;
 
-      # nur-packages 里的 herdr-nvim：包根目录就是插件根（herdr-plugin.toml +
-      # bin/ + lua/ + plugin/ + doc/），所以同一个包既注册成 herdr 插件，又当
-      # nvim 插件用（见 modules/wrappers/neovim/default.nix）。
-      herdrNvim = inputs'.nur-packages.packages.herdr-nvim;
+      # nur-packages 里的 herdr-reviewr：包根目录就是插件根（herdr-plugin.toml +
+      # bin/herdr-reviewr），和 `herdr plugin link` 期望的目录结构一致，所以既能
+      # 直接注册进注册表，也能单独跑（`herdr-reviewr ~/some/repo`，此时只有 Send
+      # 和 last-turn 两个依赖 herdr 的功能不可用）。
+      herdrReviewr = inputs'.nur-packages.packages.herdr-reviewr;
+
+      reviewrConfig = {
+        theme = "catppuccin";
+        default_scope = "uncommitted";
+        markdown_view = "rendered";
+        diff_view = "split";
+        navigator_position = "left";
+        toggle_placement = "zoomed";
+        toggle_direction = "right";
+        auto_open = false;
+        follow_file_across_tabs = true;
+        scrolloff = 5;
+        # url_opener              = ""
+        # review_prefix           = ""
+
+        keybindings.comment = [ "c" ];
+      };
 
       # plugins.json 是 herdr 会重写的可变状态（plugin install/link/enable/disable
       # 都写它，另有 .plugins.lock 锁文件），所以不能像 config.toml 那样软链到
@@ -53,18 +71,18 @@
           run install -Dm644 ${registry} "${config.xdg.configHome}/herdr/plugins.json"
         '';
 
-        # herdr-nvim 的 Lua 只在 app 模式下 exec 自己的二进制；TUI 模式下动作由
-        # herdr 按 plugin_root 解析 `bin/herdr-nvim` 起进程，列表/发送走 `herdr`
-        # CLI。装进 PATH 只是为了能直接敲 `herdr-nvim daemons` / `doctor`，以及
-        # 给别的插件（herdr-gitview 之类）`open --tab <tab> <file>` 用。
-        home.packages = [ herdrNvim ];
+        home.packages = [ herdrReviewr ];
+
+        xdg.configFile."herdr/plugins/config/persiyanov.reviewr/config.toml".source =
+          (pkgs.formats.toml { }).generate "herdr-reviewr-config.toml"
+            reviewrConfig;
 
         programs.herdr = {
           enable = true;
 
           # herdr 重新读 manifest_path 里的 herdr-plugin.toml 补全 action/pane/
           # event，所以注册表里这份极简条目就够了（见 registry.py）。
-          plugins = [ herdrNvim ];
+          plugins = [ herdrReviewr ];
 
           # 对应 ~/.config/herdr/config.toml 里去掉注释后仍然生效的部分。
           settings = {
@@ -82,6 +100,9 @@
               detach = "prefix+d";
               goto = "prefix+s";
 
+              # 默认 prefix+[ 键位别扭，换成 prefix+enter。
+              copy_mode = "prefix+enter";
+
               new_tab = "prefix+ctrl+t";
               previous_tab = "prefix+ctrl+j";
               next_tab = "prefix+ctrl+l";
@@ -98,19 +119,15 @@
               split_horizontal = "prefix+minus";
 
               # 插件动作要显式绑：TUI 插件的 herdr-plugin.toml 只声明 action，不像
-              # 桌面 app 的 mod 自带 keys.json。这是 herdr-nvim TUI.md 里的推荐键位。
+              # 桌面 app 的 mod 自带 keys.json。reviewr 的 toggle 在不看 pane 时直接
+              # 打开/聚焦，已经在看时关掉。prefix+r 是 resize_mode、prefix+e 是
+              # edit_scrollback，所以用 prefix+shift+r。
               command = [
                 {
-                  key = "prefix+e";
+                  key = "prefix+shift+r";
                   type = "plugin_action";
-                  command = "chmarax.herdr-nvim.toggle";
-                  description = "nvim sidebar";
-                }
-                {
-                  key = "prefix+o";
-                  type = "plugin_action";
-                  command = "chmarax.herdr-nvim.pick-file";
-                  description = "open file from agent output";
+                  command = "persiyanov.reviewr.toggle";
+                  description = "reviewr: toggle pane";
                 }
               ];
             };
