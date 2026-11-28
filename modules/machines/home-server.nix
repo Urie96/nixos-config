@@ -29,6 +29,8 @@
         nixbot
         # aarch64-linux 派给 orangepi5plus，aarch64-darwin 派给 mac-mini
         nix-builders-client
+        # Switch 游戏文件处理工具；prod.keys 的 clan var 在模块里声明
+        hacbrewpacklz
       ];
 
       my.mainUser.name = "urie";
