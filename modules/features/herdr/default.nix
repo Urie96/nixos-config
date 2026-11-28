@@ -118,13 +118,9 @@
               split_vertical = "prefix+n";
               split_horizontal = "prefix+minus";
 
-              # 插件动作要显式绑：TUI 插件的 herdr-plugin.toml 只声明 action，不像
-              # 桌面 app 的 mod 自带 keys.json。reviewr 的 toggle 在不看 pane 时直接
-              # 打开/聚焦，已经在看时关掉。prefix+r 是 resize_mode、prefix+e 是
-              # edit_scrollback，所以用 prefix+shift+r。
               command = [
                 {
-                  key = "prefix+shift+r";
+                  key = "prefix+ctrl+r";
                   type = "plugin_action";
                   command = "persiyanov.reviewr.toggle";
                   description = "reviewr: toggle pane";

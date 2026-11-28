@@ -62,7 +62,13 @@
     {
       programs.kitty = {
         enable = true;
-        package = pkgs.kitty;
+        # macOS 用 nur-packages 里基于上游 dmg 的 kitty（含上游签名），
+        # 其他系统仍用 nixpkgs 的 pkgs.kitty。
+        package =
+          if pkgs.stdenv.hostPlatform.isDarwin then
+            self.inputs.nur-packages.packages.${pkgs.stdenv.hostPlatform.system}.kitty
+          else
+            pkgs.kitty;
         themeFile = "Catppuccin-Mocha";
         font = {
           name = "Maple Mono NF CN";

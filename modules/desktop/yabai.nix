@@ -2,7 +2,6 @@
   flake.darwinModules.yabai = {
     services.yabai = {
       enable = true;
-      # package = self.packages.${pkgs.stdenv.hostPlatform.system}.old-pkgs.yabai;
       config = {
         mouse_follows_focus = "on";
         focus_follows_mouse = "off";

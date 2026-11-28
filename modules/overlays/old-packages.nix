@@ -19,6 +19,7 @@ let
     # 连带 sqlfluff 无法构建，导致 system-path 构建失败。等上游修好再放出来。
     "sqlfluff"
     "noctalia-shell"
+    "yabai" # 每次升级签名都要变，避免每次升级都重新授权
   ];
 
   # 只替换这几个属性，pre/post 都取当前 nixpkgs 的对应包，
