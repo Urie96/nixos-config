@@ -19,6 +19,7 @@ let
       lazydeck
     ])
     ++ (with pkgs; [
+      eza
       nmap
       which
       gzip
@@ -201,7 +202,7 @@ in
       ...
     }@args:
     {
-      environment.systemPackages = getBasePkgs args;
+      environment.systemPackages = (getBasePkgs args) ++ [ pkgs.terminal-notifier ];
     };
 
   flake.sysModules.basePkgs =

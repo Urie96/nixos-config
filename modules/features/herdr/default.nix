@@ -26,6 +26,23 @@
       # 和 last-turn 两个依赖 herdr 的功能不可用）。
       herdrReviewr = inputs'.nur-packages.packages.herdr-reviewr;
 
+      # nur-packages 里的 herdr-plugin-sesh：同样满足「包根目录就是插件根」
+      # （herdr-plugin.toml + 预编译的 bin/herdr-sesh），manifest 里的
+      # [[startup]]/[[events]]/[[actions]]/[[panes]] 都被 registry 重载读取。
+      # home.packages 里通过下面的 pluginCli 壳只暴露她的 CLI。
+      herdrSesh = inputs'.nur-packages.packages.herdr-plugin-sesh;
+
+      # 两个插件包的根目录都有 herdr-plugin.toml，而 home-manager 的
+      # buildEnv 不允许同一个子路径来自两个 store 路径（直接一起放进
+      # home.packages 会报 conflicting subpath）。插件本身只需要注册表指向包根，
+      # 所以 home.packages 里只放一个只含 bin/ 的壳，用来单独跑 CLI。
+      pluginCli =
+        name: drv:
+        pkgs.runCommand "${name}-cli" { } ''
+          mkdir -p $out/bin
+          ln -s ${drv}/bin/${name} $out/bin/${name}
+        '';
+
       reviewrConfig = {
         theme = "catppuccin";
         default_scope = "uncommitted";
@@ -71,7 +88,10 @@
           run install -Dm644 ${registry} "${config.xdg.configHome}/herdr/plugins.json"
         '';
 
-        home.packages = [ herdrReviewr ];
+        home.packages = [
+          (pluginCli "herdr-reviewr" herdrReviewr)
+          (pluginCli "herdr-sesh" herdrSesh)
+        ];
 
         xdg.configFile."herdr/plugins/config/persiyanov.reviewr/config.toml".source =
           (pkgs.formats.toml { }).generate "herdr-reviewr-config.toml"
@@ -82,7 +102,10 @@
 
           # herdr 重新读 manifest_path 里的 herdr-plugin.toml 补全 action/pane/
           # event，所以注册表里这份极简条目就够了（见 registry.py）。
-          plugins = [ herdrReviewr ];
+          plugins = [
+            herdrReviewr
+            herdrSesh
+          ];
 
           # 对应 ~/.config/herdr/config.toml 里去掉注释后仍然生效的部分。
           settings = {
@@ -124,6 +147,18 @@
                   type = "plugin_action";
                   command = "persiyanov.reviewr.toggle";
                   description = "reviewr: toggle pane";
+                }
+                {
+                  key = "prefix+ctrl+s";
+                  type = "plugin_action";
+                  command = "fullerzz.sesh.open-picker";
+                  description = "sesh: open picker";
+                }
+                {
+                  key = "prefix+ctrl+o";
+                  type = "plugin_action";
+                  command = "fullerzz.sesh.last";
+                  description = "sesh: previous workspace";
                 }
               ];
             };
